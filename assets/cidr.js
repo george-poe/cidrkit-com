@@ -1,16 +1,16 @@
-/* Subnet 计算引擎 —— 纯函数，无 DOM 依赖。
+/* Subnet calculator engine — pure functions, no DOM dependency.
  *
- * 同一份文件被两处加载：
- *   · 页面 <script src="/assets/cidr.js">
- *   · test/index.html —— 拿 test/vectors.json 对答案
+ * one file, loaded from two places:
+ *   · the page <script src="/assets/cidr.js">
+ *   · test/index.html — answers checked against test/vectors.json
  *
- * 为什么所有算术都走 BigInt 而不是 32 位整数：
- * IPv6 的地址数是 2^128，`2 ** (128 - 32)` 在 JS Number 里直接变 Infinity。
- * 用两套数字路径就会有两套 bug，所以统一 BigInt，IPv4 也一样走。
+ * why every calculation goes through BigInt instead of 32-bit integers:
+ * the IPv6 address count is 2^128, and `2 ** (128 - 32)` turns straight into Infinity in a JS Number.
+ * two numeric paths means two sets of bugs, so everything is BigInt, IPv4 included.
  *
- * 语义对齐 Python 的 ipaddress（网络位以外的主机位被忽略，即 strict=False），
- * 因为用户就是会粘贴 192.168.1.37/24 这种，报错不如告诉他网段是什么。
- * 这一点在页面上明说了，不偷偷改。
+ * semantics follow Python ipaddress (host bits outside the network are ignored, i.e. strict=False),
+ * because users do paste 192.168.1.37/24, and an error tells them less than the network does.
+ * the page states this outright; nothing is rewritten quietly.
  */
 (function (root) {
   "use strict";
@@ -26,9 +26,9 @@
 
   function fail(msg, detail) { throw new CidrError(msg, detail); }
 
-  /* ── IPv4 文本 ───────────────────────────────────────────────────
-   * 四条十进制、每条 0-255、不许前导零（0.1.2.3 里的 "00" 会被拒——
-   * 前导零在 POSIX 里是八进制，静默接受等于埋雷）。
+  /* ── IPv4 text ───────────────────────────────────────────────────
+   * four decimal parts, each 0-255, no leading zeros (the "00" in 0.1.2.3 is refused —
+   * a leading zero is octal in POSIX, so accepting one in silence plants a mine).
    */
   function parseV4(s) {
     if (typeof s !== "string") fail("An IPv4 address must be text");
@@ -61,10 +61,10 @@
     }).join(".");
   }
 
-  /* ── IPv6 文本 ─────────────────────────────────────────────────
-   * 支持 :: 缩写、一个可选的末尾 IPv4（::ffff:1.2.3.4）。
-   * 规则：至多一个 ::；不含 :: 时正好 8 组；含 :: 时显式组数 ≤ 7
-   * （因为 :: 至少要代替一组，否则写法无意义 —— 和 inet_pton 一致）。
+  /* ── IPv6 text ─────────────────────────────────────────────────
+   * accepts :: compression and one optional trailing IPv4 (::ffff:1.2.3.4).
+   * rules: at most one ::; exactly 8 groups without it; at most 7 explicit groups with it
+   * (because :: has to stand for at least one group, otherwise the form is pointless — same as inet_pton).
    */
   function parseV6(s) {
     var t = s.trim();
@@ -76,8 +76,8 @@
       if (/^\d+\.\d+\.\d+\.\d+$/.test(maybe)) {
         tail = parseV4(maybe);
         tailV4 = true;
-        // before 形如 "::ffff:" —— 那个收尾冒号是 IPv4 的分隔符，
-        // 留着会让 split() 切出一个空串然后被判非法
+        // before looks like "::ffff:" — that trailing colon is the IPv4 separator,
+        // leaving it in makes split() yield an empty string that is then judged invalid
         t = before.replace(/:+$/, "");
       } else {
         fail("IPv6 contains a fragment that is not an address: “" + t + "”", {got: s});
@@ -114,8 +114,8 @@
       last = [];
     }
 
-    // 显式组数要把内嵌 IPv4 算成 2 组，否则 "::ffff:1.2.3.4" 会填出 11 组，
-    // 再靠 splice 硬砍——砍掉的是 head，等于把高位丢了
+    // the explicit group count must treat the embedded IPv4 as 2 groups, otherwise "::ffff:1.2.3.4" fills 11,
+    // and cutting it down with splice afterwards would cut from the head, i.e. lose the high bits
     var tailGroups = tailV4 ? 2 : 0;
     var explicit = head.length + last.length + tailGroups;
     if (compress) {
@@ -145,8 +145,8 @@
     for (i = 0; i < 8; i++) {
       g.push(Number((v >> BigInt(16 * (7 - i))) & 0xffffn));
     }
-    // 找最长的连续零段（≥2 组）来压缩。单组 0 不压——那是 :: 的误用，
-    // 也和 inet_pton / Python 的行为一致。
+    // compress the longest run of consecutive zeros (2 groups or more). a lone 0 is not compressed — that misuses ::,
+    // and it matches what inet_pton and Python do.
     var bestS = -1, bestL = 0, runS = -1, runL = 0;
     for (i = 0; i < 8; i++) {
       if (g[i] === 0) {
@@ -158,8 +158,8 @@
     if (bestL < 2) {
       return g.map(function (x) { return x.toString(16); }).join(":");
     }
-    // 必须是 head + "::" + tail 两段拼，不能拿 parts.join(":") 凑——
-    // 零段在末尾时 join 会少一个冒号，"2001:db8::" 变成 "2001:db8:"
+    // it has to be head + "::" + tail assembled in two halves, not parts.join(":") —
+    // with the zero run at the end join loses a colon, "2001:db8::" becomes "2001:db8:"
     var head = [], tail = [];
     for (i = 0; i < bestS; i++) head.push(g[i].toString(16));
     for (i = bestS + bestL; i < 8; i++) tail.push(g[i].toString(16));
@@ -172,26 +172,26 @@
 
   function bitsOf(ver) { return ver === 4 ? V4_BITS : V6_BITS; }
 
-  /* ── 掩码 ────────────────────────────────────────────────────────
-   * netmask 必须是一串 1 紧跟一串 0；hostmask 反过来。
-   * 两种都接受（Cisco 的人写 ACL 用的是 wildcard），但要能分辨：
-   * 255.255.0.255 两个都不是 —— 必须报错，不能猜成 /16 或 /24。
+  /* ── Masks ────────────────────────────────────────────────────────
+   * a netmask must be one run of 1s then one run of 0s; a hostmask is the reverse.
+   * both are accepted (Cisco people write ACLs with a wildcard), but they must be told apart:
+   * 255.255.0.255 is neither — it must error out, not be guessed as /16 or /24.
    */
   function netmaskLen(m, bits) {
-    // netmask = 高位一串 1 + 低位一串 0，且必须铺满整宽度。
-    // 注意 bits 是 BigInt：拿 Number 的 n+ones 去 !== 它会恒真，
-    // 于是所有点分掩码都被判成非法。先转成 Number 再比。
+    // netmask = a run of 1s at the top plus a run of 0s below, and it must fill the whole width.
+    // note bits is a BigInt: comparing n+ones as a Number against it with !== is always true,
+    // so every dotted mask came out illegal. convert to Number before comparing.
     var total = Number(bits);
     var n = 0, x = m;
-    while (x > 0n && (x & 1n) === 0n) { x >>= 1n; n++; }     // 尾部 0
+    while (x > 0n && (x & 1n) === 0n) { x >>= 1n; n++; }     // trailing 0s
     var ones = 0, y = x;
-    while (y > 0n && (y & 1n) === 1n) { y >>= 1n; ones++; }   // 紧接着的 1
+    while (y > 0n && (y & 1n) === 1n) { y >>= 1n; ones++; }   // the 1s right after it
     if (y !== 0n || n + ones !== total) return -1;
-    return ones;                        // /0 走到这里是 0，不是 -1
+    return ones;                        // /0 arrives here as 0, not -1
   }
 
   function hostmaskLen(m, bits) {
-    // hostmask = 低位一串 1，其余全 0
+    // hostmask = a run of 1s at the bottom, 0s everywhere else
     var c = 0, x = m;
     while (x > 0n && (x & 1n) === 1n) { x >>= 1n; c++; }
     if (x !== 0n) return -1;
@@ -211,13 +211,13 @@
     return ~((1n << BigInt(bits) - BigInt(p)) - 1n) & ((1n << BigInt(bits)) - 1n);
   }
 
-  /* ── 入口：把用户会写的各种形式收敛成 {version, network, prefixlen} ──
-   * 接受：
-   *   10.0.0.0/8            前缀
-   *   10.0.0.0 255.0.0.0    点分掩码（空格或 / 都行）
-   *   10.0.0.0 0.255.255.255  通配符掩码
-   *   10.0.0.0 - 10.0.0.255  起止区间（必须正好是一个合法网段）
-   *   10.0.0.0              裸地址 → /32（v6 → /128）
+  /* ── Entry: collapse what users type into {version, network, prefixlen} ──
+   * accepts:
+   *   10.0.0.0/8            prefix
+   *   10.0.0.0 255.0.0.0    dotted mask (space or / both fine)
+   *   10.0.0.0 0.255.255.255  wildcard mask
+   *   10.0.0.0 - 10.0.0.255  start - end range (must be exactly one valid network)
+   *   10.0.0.0              bare address → /32 (v6 → /128)
    */
   function parse(text) {
     var t = String(text == null ? "" : text).trim();
@@ -225,9 +225,9 @@
 
     var version = t.indexOf(":") >= 0 ? 6 : 4;
 
-    // 起止区间必须先认。它内部本来就带空格，晚一步就被下面
-    // 「地址 + 掩码」那条通用切分抢走了——区间两侧各是一个完整地址，
-    // 切出来变成 地址 + "- 144.54.31.255"，然后报"Part 1 段不是十进制"。
+    // a start - end range has to be recognised first. it carries a space, so a moment later the
+    // generic address + mask split below takes it — both ends of a range are full addresses,
+    // so the split yields address + "- 144.54.31.255" and the error says part 1 is not a decimal number.
     var rg = t.match(/^(\S+)\s*(-|\u2013|to)\s*(\S+)$/i);
     if (rg) {
       var loS = rg[1], hiS = rg[3];
@@ -238,8 +238,8 @@
       if (hi < lo) fail("The range is backwards: " + loS + " is above " + hiS + "");
       var size = hi - lo + 1n;
       if ((size & (size - 1n)) !== 0n) {
-        // 不给猜一个覆盖前缀就返回：那等于替用户放宽 ACL。但可以把
-        // 「最小能装下它的块」算出来写在错语里，让他自己决定要不要。
+        // never return a guessed covering prefix: that loosens the ACL on the users behalf. but it can put
+        // the smallest block that covers it into the error text and let the user decide.
         var cp = Number(rbits) - bitLength(size);
         if (cp < 0) cp = 0;
         for (;;) {
@@ -256,7 +256,7 @@
              "To describe this range exactly, list the blocks in the Collapse tab.",
              {got: loS, covering: formatAddr(coverNet, rver) + "/" + cp});
       }
-      // bitLength(2**n) 是 n+1，不是 n：256 的二进制是 1 跟 8 个 0。
+      // bitLength(2**n) is n+1, not n: 256 in binary is a 1 followed by 8 zeros.
       var rp = Number(rbits) - (bitLength(size) - 1);
       var netInt = lo & maskFromPrefix(rp, rbits);
       if (netInt !== lo) {
@@ -300,7 +300,7 @@
     return {
       version: version, network: network, prefixlen: prefix,
       inputWas: as,
-      // 主机位被抹掉了 —— 页面上要能说出来，不能假装用户写的就是网络地址
+      // host bits were cleared — the page has to say so instead of pretending the input was a network address
       hostBitsIgnored: network !== addr,
       originalHost: addr
     };
@@ -312,7 +312,7 @@
     return b;
   }
 
-  /* ── 汇总 ────────────────────────────────────────────────────── */
+  /* ── Summarize ────────────────────────────────────────────────────── */
   function inNetwork(addr, net, prefixlen, bits) {
     return (addr & maskFromPrefix(prefixlen, bits)) === net;
   }
@@ -322,8 +322,8 @@
                     "192.0.2.0/24", "192.168.0.0/16", "198.18.0.0/15",
                     "198.51.100.0/24", "203.0.113.0/24", "240.0.0.0/4",
                     "255.255.255.255/32"];
-  /* CGNAT（RFC 6598）。Python 的 is_private 不含它，所以不能塞进上面那张表——
-     比对基准就是 Python。但"这段是不是运营商 NAT 内网"对用户有用，单列一个字段。 */
+  /* CGNAT (RFC 6598). Python is_private does not cover it, so it cannot go into the table above —
+     the baseline is Python. but "is this carrier NAT space" is useful to users, so it gets its own field. */
   var V4_CGNAT = ["100.64.0.0/10"];
   var V4_DOC = ["192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24"];
   var V4_BENCHMARK = ["198.18.0.0/15"];
@@ -343,7 +343,7 @@
 
   function flags(network, prefixlen, version) {
     if (version !== 4) {
-      // 不猜：IPv6 的分类表很长（Python 那份有几十条），抄一半比不抄更坏
+      // no guessing: the IPv6 classification table is long (Python lists dozens), a partial copy is worse than silence
       return { is_private: null, is_loopback: null, is_link_local: null,
                is_multicast: null, is_reserved: null, is_cgnat: null,
                is_documentation: null, is_benchmarking: null };
@@ -373,10 +373,10 @@
     var bcast = p.network | (~mask & ((1n << bits) - 1n));
     var total = 1n << (bits - BigInt(p.prefixlen));
 
-    // 保留哪些地址不是一个「减二」能概括的：v4 去头去尾（/31 与 /32 都不去），
-    // v6 只去 subnet-router anycast（首址）——v6 没有 broadcast，尾址是普通
-    // 可用地址；/127 与 /128 一个都不去。基准是 Python ipaddress；大网段
-    // 不能物化，所以这条规则在 make_vectors.py 里先在可物化的小前缀上对过。
+    // which addresses to reserve is not a minus-two rule: v4 drops first and last (neither for /31 nor /32),
+    // v6 drops only the subnet-router anycast (first address) — v6 has no broadcast, the last address is an ordinary
+    // usable address; /127 and /128 drop nothing. the reference is Python ipaddress; a large network
+    // cannot be materialised, so this rule is matched in make_vectors.py on the small prefixes that can be.
     var isSpecial = (bcast - p.network) <= 1n;
     var first = isSpecial ? p.network : p.network + 1n;
     var last = (p.version === 6 || isSpecial) ? bcast : bcast - 1n;
@@ -405,17 +405,17 @@
     return out;
   }
 
-  /* ── 超网汇总：等价于 Python 的 collapse_addresses ─────────────
+  /* ── Supernet summarize: equals Python collapse_addresses ─────────────
    *
-   * 别照着"两两比较谁包含谁"写——那是 O(n^2)，10k 条就废了
-   * （第一版就是，实测 50k 条直接把标签页跑没了）。
-   * 正解是排序扫描：
-   *   1. 按网络地址升序、同地址按前缀升序（宽的在前）排一次
-   *   2. 任何块的包含者若存在，必然是扫描线上"上一个保留块"——
-   *      因为中间那些一定也落在同一个父块里，早就被吃掉了。
-   *      所以一遍线性扫描就够，O(n log n) 全在排序。
-   *   3. 合并同尺寸兄弟块，反复到不动点。每轮至少少一个块，
-   *      轮数上界就是位宽（32 / 128），所以是 O(轮数 × n log n)。
+   * do not write it as pairwise containment checks — that is O(n^2) and dies at 10k entries
+   * (the first version did exactly that: 50k entries took the tab down).
+   * the right shape is a sorted scan:
+   *   1. sort once by network address ascending, then by prefix ascending (wider first) on ties
+   *   2. if a block has a container, it must be the last kept block on the scan line —
+   *      because everything in between lies inside the same parent block and was swallowed already.
+   *      so one linear pass is enough and the O(n log n) is all sorting.
+   *   3. merge same-size siblings, repeat to a fixed point. each round drops at least one block,
+   *      the round count is bounded by the width (32 / 128), so it stays O(rounds × n log n).
    */
   function summarize(list) {
     if (!list || !list.length) return [];
@@ -434,7 +434,7 @@
 
     items.sort(function (a, b) { return cmpBig(a.n, b.n) || a.p - b.p; });
 
-    // 1) 丢掉被上一个保留块完全包含的
+    // 1) drop anything fully contained in the last kept block
     var kept = [];
     for (i = 0; i < items.length; i++) {
       if (kept.length) {
@@ -444,7 +444,7 @@
       kept.push(items[i]);
     }
 
-    // 2) 合并相邻的等尺寸兄弟块
+    // 2) merge adjacent same-size sibling blocks
     var changed = true;
     while (changed) {
       changed = false;
@@ -464,7 +464,7 @@
       kept = merged;
     }
 
-    // 3) 合并可能造出新的包含关系（父块吃掉了旁边某个碎块），再扫一遍
+    // 3) merging can create new containment (a parent swallowed a fragment next door), so scan again
     kept.sort(function (x, y) { return cmpBig(x.n, y.n) || x.p - y.p; });
     var fin = [];
     for (i = 0; i < kept.length; i++) {
@@ -480,7 +480,7 @@
 
   function cmpBig(a, b) { return a < b ? -1 : (a > b ? 1 : 0); }
 
-  /* ── 拆分：切 diff 层，返回前 cap 条 + 总数 ───────────────────── */
+  /* ── Split: cut diff levels, return the first cap entries + the total ───────────────────── */
   function subnets(text, diff, cap) {
     var r = parse(text);
     var bits = bitsOf(r.version);
@@ -498,7 +498,7 @@
     return { total: count.toString(), list: out };
   }
 
-  /* ── 包含判断 ─────────────────────────────────────────────────── */
+  /* ── Containment ─────────────────────────────────────────────────── */
   function contains(cidrText, addrText) {
     var net = parse(cidrText);
     var a = String(addrText).trim();

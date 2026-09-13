@@ -1,14 +1,14 @@
-/* Subnet 工具前端。
+/* Subnet tools front end.
  *
- * 全部同步算：analyze 实测 0.042 ms/次，不需要 worker。
- * 唯一可能慢的是 summarize（50k 条 188 ms）和 split 的大列表，
- * 那两个都在按钮里做，并且渲染有上限——把 1600 万行塞进 DOM 是找死。
+ * everything is computed synchronously: analyze measures 0.042 ms per call, no worker needed.
+ * the only things that can get slow are summarize (188 ms for 50k entries) and a big split list,
+ * both of those run behind a button and cap what they render — 16 M lines into the DOM is suicide.
  */
 (function () {
   "use strict";
   var E = self.CidrEngine;
-  var RENDER_CAP = 2000;      // 列表渲染上限，超了就提示改用下载
-  var DL_CAP = 200000;        // 下载上限，再大浏览器会当场没了
+  var RENDER_CAP = 2000;      // list render cap; past it, point the user at download
+  var DL_CAP = 200000;        // download cap; past it the browser dies on the spot
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -17,7 +17,7 @@
     });
   }
 
-  /* ── 标签页 ─────────────────────────────────────────────────── */
+  /* ── Tabs ─────────────────────────────────────────────────── */
   var TABS = ["calc", "sum", "split", "find"];
   function showTab(name) {
     TABS.forEach(function (t) {
@@ -32,7 +32,7 @@
     if (b) b.addEventListener("click", function () { showTab(t); });
   });
 
-  /* ── 1) 计算器 ──────────────────────────────────────────────── */
+  /* ── 1) Calculator ──────────────────────────────────────────────── */
   var ROWS = [
     ["CIDR", "cidr"],
     ["Network address", "network_address"],
@@ -77,7 +77,7 @@
       var v = r[pair[1]];
       if (v === null || v === undefined) return;
       var shown = (pair[1] === "num_addresses" || pair[1] === "num_hosts") ? big(v) : v;
-      // 只有真的被缩写过才补原文，否则小数字会显示成「32 32」
+      // only append the expanded form when it really was abbreviated, otherwise small numbers show up as "32 32"
       var extra = (String(shown) !== String(v))
         ? ' <span class="dim">' + esc(String(v)) + "</span>" : "";
       bits.push("<tr><th>" + pair[0] + '</th><td><code>' + esc(String(shown)) +
@@ -115,7 +115,7 @@
     });
   }
 
-  /* ── 2) 合并 ────────────────────────────────────────────────── */
+  /* ── 2) Collapse ────────────────────────────────────────────────── */
   function renderSum() {
     var box = $("sum-res"), txt = ($("sum-in").value || "").trim();
     if (!txt) { box.innerHTML = '<p class="note">One CIDR per line.</p>'; return; }
@@ -142,7 +142,7 @@
     });
   }
 
-  /* ── 3) 拆分 ────────────────────────────────────────────────── */
+  /* ── 3) Split ────────────────────────────────────────────────── */
   function renderSplit() {
     var box = $("split-res");
     var net = ($("split-net").value || "").trim();
@@ -187,7 +187,7 @@
     });
   }
 
-  /* ── 4) 地址在不在网段里 ─────────────────────────────────────── */
+  /* ── 4) Is this address inside the network ─────────────────────────────────────── */
   function renderFind() {
     var box = $("find-res");
     var addr = ($("find-addr").value || "").trim();
@@ -206,7 +206,7 @@
     }
   }
 
-  /* ── 小工具 ─────────────────────────────────────────────────── */
+  /* ── Small helpers ─────────────────────────────────────────────────── */
   function flash(el, msg) {
     var old = el.textContent;
     el.textContent = msg;
@@ -237,7 +237,7 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
   }
 
-  /* 输入即时重算：0.042 ms/次，不需要防抖到秒级 */
+  /* recompute on every keystroke: 0.042 ms per call, no need to debounce to seconds */
   function live(id, fn) {
     var el = $(id);
     if (!el) return;

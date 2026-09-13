@@ -56,8 +56,8 @@
     });
   }
 
-  /* UI 脚本解析门：跟 json-tools 同一理由——语法错不会弄坑断言，
-     但会把整页交互弄瞊。 */
+  /* UI script parse gate: same reason as json-tools — a syntax error does not break the assertions,
+     but it kills every interaction on the page. */
   g("UI scripts parse");
   ["/assets/cidr.js", "/assets/app.js"].forEach(function (rel) {
     var ok = false, why = "";
@@ -134,7 +134,7 @@
           JSON.stringify(got) + " vs " + JSON.stringify(e.expect));
       } else if (e.kind === "subnets") {
         var s = E.subnets(e.input.cidr, e.input.diff, 1024);
-        // expect 只截了前 8 条，所以比的是前缀，不是整个列表
+        // expect only keeps the first 8 entries, so compare a prefix rather than the whole list
         var okList = JSON.stringify(s.list.slice(0, e.expect.length)) ===
           JSON.stringify(e.expect);
         var okCnt = s.total === String(e.expect_count);

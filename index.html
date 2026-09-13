@@ -37,7 +37,7 @@
   <div class="prose">
       <p>Subnet and CIDR arithmetic: network address, netmask, wildcard mask, broadcast, the usable range, both counts, and range classification for IPv4. Accepts a prefix, a dotted mask, a Cisco wildcard mask or an inclusive address range, and it reads IPv6 exactly — including counts up to 2^128, which is why the engine works in BigInt rather than numbers.</p>
       <p>It also does the two jobs that are annoying by hand: collapsing a pasted list of CIDR blocks into the smallest equivalent set (50,000 entries in 187.7 ms), and splitting one block into equal smaller subnets with the per-subnet host count spelled out, including the /31 and /32 cases where the usual minus-two rule is wrong.</p>
-      <p>Every number this site prints is checked against Python's standard-library <code>ipaddress</code> module — 356 valid inputs compared field by field, 15 malformed inputs that must be rejected, and 20 capability cases for collapse, split and containment. Nothing is uploaded; there is no server call anywhere in the code path.</p>
+      <p>Every number this site prints is checked against Python's standard-library <code>ipaddress</code> module — 356 valid inputs compared field by field, 15 malformed inputs that must be rejected, and 20 capability cases for collapse, split and containment. Nothing you paste is uploaded; there is no server call anywhere in the code path.</p>
   </div>
 
 </main>
@@ -46,10 +46,12 @@
     <p>Every calculation runs inside your browser tab. Nothing you paste is sent to a server, because there is no server call in the code path.</p>
     <div class="row">
       <a href="/subnet-calculator/">Subnet Calculator</a>
+      <a href="/privacy/">Privacy</a>
     </div>
   </div>
 </footer>
 <script src="/assets/cidr.js"></script>
 <script src="/assets/app.js"></script>
+
 </body>
 </html>

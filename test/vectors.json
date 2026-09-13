@@ -8540,6 +8540,6 @@
  ],
  "meta": {
   "host_rule_checked_against_cpython": 20,
-  "host_rule_note": "小网段直接拿 list(hosts())；大网段用同一规则，该规则已在 20 个可物化前缀上逐一对过"
+  "host_rule_note": "Small prefixes use list(hosts()) directly; large ones use the same rule, which was checked one by one against CPython on 20 materialisable prefixes"
  }
 }

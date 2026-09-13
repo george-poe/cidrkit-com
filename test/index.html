@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subnet engine — self test</title>
+<style>
+ body{font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin:20px auto;max-width:900px;color:#15181e;background:#fbfcfe}
+ h1{font-size:19px;margin:0 0 4px}
+ .sum{position:sticky;top:0;background:#fbfcfe;padding:8px 0;border-bottom:1px solid #e3e8ef;margin-bottom:10px}
+ .g{color:#0a7d3c}.r{color:#c0242b}
+ .grp{margin:14px 0 4px;font-weight:700;color:#3b4657}
+ div.t{padding:1px 0}
+ code{background:#eef1f6;padding:1px 4px;border-radius:3px}
+ pre{white-space:pre-wrap;background:#fff;border:1px solid #e3e8ef;padding:8px;border-radius:6px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>Subnet engine — self test</h1>
+<div class="sum" id="sum">loading vectors…</div>
+<div id="log"></div>
+
+<script src="../assets/cidr.js"></script>
+<script>
+(function () {
+  var E = self.CidrEngine;
+  var log = document.getElementById("log");
+  var sum = document.getElementById("sum");
+  var pass = 0, fail = 0, fails = [];
+  var group = null;
+
+  function g(name) {
+    group = name;
+    var d = document.createElement("div");
+    d.className = "grp";
+    d.textContent = name;
+    log.appendChild(d);
+  }
+  function t(label, ok, got) {
+    var d = document.createElement("div");
+    d.className = "t";
+    if (ok) { pass++; d.innerHTML = '<span class="g">\u2714</span> ' + label; }
+    else {
+      fail++;
+      d.innerHTML = '<span class="r">\u2718</span> ' + label +
+        (got === undefined ? "" : ' <span style="color:#7a8699">\u2192 ' +
+         esc(String(got).slice(0, 300)) + "</span>");
+      fails.push(group + " / " + label + (got === undefined ? "" : " :: " + String(got).slice(0, 200)));
+    }
+    log.appendChild(d);
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  /* UI 脚本解析门：跟 json-tools 同一理由——语法错不会弄坑断言，
+     但会把整页交互弄瞊。 */
+  g("UI scripts parse");
+  ["/assets/cidr.js", "/assets/app.js"].forEach(function (rel) {
+    var ok = false, why = "";
+    try {
+      var x = new XMLHttpRequest();
+      x.open("GET", rel, false);
+      x.send();
+      if (x.status === 200) { new Function(x.responseText); ok = true; }
+      else { why = "HTTP " + x.status; }
+    } catch (e) { why = e.name + ": " + e.message; }
+    t(rel.split("/").pop() + " parses", ok, why);
+  });
+
+  var FIELDS = ["cidr", "version", "network_address", "netmask", "wildcard", "broadcast",
+                "prefixlen", "num_addresses", "num_hosts", "first_host", "last_host",
+                "is_private", "is_loopback", "is_link_local", "is_multicast", "is_reserved"];
+
+  fetch("../test/vectors.json").then(function (r) {
+    if (!r.ok) throw new Error("vectors.json HTTP " + r.status);
+    return r.json();
+  }).then(function (data) {
+    var V = data.vectors, X = data.extra;
+
+    g("Valid inputs (field-by-field against Python ipaddress)");
+    var perField = {};
+    V.forEach(function (c) {
+      if (!c.expect) return;
+      var r = E.analyze(c.input);
+      if (!r.ok) {
+        t(c.input + " should compute", false, r.error && r.error.message);
+        return;
+      }
+      FIELDS.forEach(function (f) {
+        var want = c.expect[f], got = r[f];
+        if (String(want) !== String(got)) {
+          perField[f] = (perField[f] || 0) + 1;
+          t(c.input + " \u2192 " + f, false, "expected " + want + " got " + got);
+        }
+      });
+    });
+    if (!perField || Object.keys(perField).length === 0) {
+      t("All " + V.filter(function (c) { return c.expect; }).length +
+        " valid inputs match on all 16 fields", true);
+    }
+
+    g("Malformed inputs (must be rejected, not guessed)");
+    V.forEach(function (c) {
+      if (c.expect) return;
+      var r = E.analyze(c.input);
+      t(JSON.stringify(c.input) + " rejected", !r.ok,
+        r.ok ? "computed when it should have failed: " + r.cidr : (r.error && r.error.message));
+    });
+
+    g("Error text says what to do, not just invalid");
+    [
+      ["192.168.1.256/24", "255"],
+      ["1.2.3/24", "four dotted parts|has"],
+      ["1.2.3.4/33", "32|limit"],
+      ["01.2.3.4", "leading zero"],
+      ["1.2.3.4/255.255.0.255", "netmask|wildcard"]
+    ].forEach(function (pair) {
+      var r = E.analyze(pair[0]);
+      var msg = r.error ? r.error.message : "";
+      var hit = new RegExp(pair[1], "i").test(msg);
+      t(pair[0] + " hint is actionable", hit, msg);
+    });
+
+    g("Extra capability: collapse / split / containment");
+    X.forEach(function (e) {
+      if (e.kind === "summarize") {
+        var got = E.summarize(e.input);
+        t("Collapse " + e.input.join(" + "),
+          JSON.stringify(got) === JSON.stringify(e.expect),
+          JSON.stringify(got) + " vs " + JSON.stringify(e.expect));
+      } else if (e.kind === "subnets") {
+        var s = E.subnets(e.input.cidr, e.input.diff, 1024);
+        // expect 只截了前 8 条，所以比的是前缀，不是整个列表
+        var okList = JSON.stringify(s.list.slice(0, e.expect.length)) ===
+          JSON.stringify(e.expect);
+        var okCnt = s.total === String(e.expect_count);
+        t("Split " + e.input.cidr + " +" + e.input.diff,
+          okList && okCnt,
+          (okList ? "" : "first entries wrong: " + JSON.stringify(s.list)) +
+          (okCnt ? "" : " total " + s.total + " expected " + e.expect_count));
+      } else if (e.kind === "contains") {
+        var c = E.contains(e.input.cidr, e.input.address);
+        t(e.input.address + (e.expect ? " inside " : " not inside ") + e.input.cidr,
+          c === e.expect, c);
+      }
+    });
+
+    g("Big numbers keep full precision (this is why BigInt)");
+    var big = E.analyze("2001:db8::/32");
+    t("IPv6 /32 count is the exact decimal of 2^96",
+      big.ok && big.num_addresses === "79228162514264337593543950336", big.num_addresses);
+    t("does not become Infinity", big.ok && big.num_addresses.indexOf("e+") < 0,
+      big.num_addresses);
+    var z = E.analyze("1.2.3.4/0");
+    t("/0 reports 4294967296 addresses",
+      z.ok && z.num_addresses === "4294967296", z.ok ? z.num_addresses : z.error.message);
+    t("/0 reports 4294967294 usable hosts",
+      z.ok && z.num_hosts === "4294967294", z.ok ? z.num_hosts : null);
+
+    g("Tolerance for how people actually type");
+    var h = E.analyze("192.168.1.37/24");
+    t("Host bits normalised to the network, and it says so",
+      h.ok && h.cidr === "192.168.1.0/24" && h.host_bits_ignored === true &&
+      h.host_bits_ignored_from === "192.168.1.37", h.ok ? h.cidr + "/" + h.host_bits_ignored : h.error.message);
+    var mm = E.analyze("10.0.0.0 255.0.0.0");
+    t("Space-separated dotted mask", mm.ok && mm.cidr === "10.0.0.0/8", mm.ok ? mm.cidr : null);
+    var ww = E.analyze("10.0.0.0/0.255.255.255");
+    t("Wildcard mask (Cisco form)", ww.ok && ww.cidr === "10.0.0.0/8", ww.ok ? ww.cidr : ww.error.message);
+    var rr = E.analyze("192.168.1.0 - 192.168.1.255");
+    t("Start - end range", rr.ok && rr.cidr === "192.168.1.0/24", rr.ok ? rr.cidr : rr.error.message);
+    var bb = E.analyze("8.8.8.8");
+    t("Bare address read as /32", bb.ok && bb.cidr === "8.8.8.8/32", bb.ok ? bb.cidr : null);
+    var e31 = E.analyze("10.0.0.0/31");
+    t("/31 has 2 usable addresses, not 0 - point-to-point",
+      e31.ok && e31.num_hosts === "2", e31.ok ? e31.num_hosts : null);
+    var e32 = E.analyze("10.0.0.1/32");
+    t("/32 has exactly 1 address", e32.ok && e32.num_hosts === "1", e32.ok ? e32.num_hosts : null);
+    var v6 = E.analyze("2001:db8::1/48");
+    t("IPv6 with host bits also normalises", v6.ok && v6.cidr === "2001:db8::/48",
+      v6.ok ? v6.cidr : null);
+    var emb = E.analyze("::ffff:1.2.3.4/128");
+    t("IPv4 embedded in IPv6 resolves", emb.ok, emb.ok ? emb.cidr : emb.error.message);
+
+    sum.innerHTML = "passed <b class=g>" + pass + "</b> / failed <b class=" +
+      (fail ? "r" : "g") + ">" + fail + "</b>" +
+      (fail ? "" : "  ← all green") +
+      '<span style="color:#7a8699">  (' + V.length + ' vectors + ' + X.length + ' extra)</span>';
+    if (fails.length) {
+      var pre = document.createElement("pre");
+      pre.textContent = "Failures (first 40):\n" + fails.slice(0, 40).join("\n");
+      log.appendChild(pre);
+    }
+    window.__T__ = { pass: pass, fail: fail, fails: fails };
+  }).catch(function (e) {
+    sum.innerHTML = '<span class="r">FATAL ' + esc(e && e.message) + "</span>";
+    window.__T__ = { pass: 0, fail: -1, fails: [String(e && e.stack).slice(0, 400)] };
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# CIDRKit
+
+> Subnet and CIDR arithmetic that runs in your browser, checked against Python's ipaddress field by field.
+
+All calculations run in the browser. Nothing is uploaded.
+
+## Tools
+
+- [Subnet Calculator](https://cidrkit.com/subnet-calculator/): Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing is uploaded.
+
+## Key facts
+
+- A /24 holds 256 addresses and 254 usable hosts; the network and broadcast addresses are the difference.
+- A /31 has 2 usable hosts (RFC 3021, point-to-point) and a /32 has 1. Applying minus-two to either is wrong.
+- IPv6 has no broadcast address, so the minus-two rule does not exist there.
+- A wildcard (host) mask is the exact inverse of a netmask; both spellings describe the same block.
+- A block of CIDRs can be collapsed only when two blocks are equal size, adjacent and aligned on the parent boundary. Checked against Python's ipaddress on 356 inputs.

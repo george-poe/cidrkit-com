@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subnet Calculator — CIDR, Netmask, Wildcard, Collapse</title>
+<meta name="description" content="Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing is uploaded.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CIDRKit">
+<meta property="og:title" content="Subnet Calculator — CIDR, Netmask, Wildcard, Collapse">
+<meta property="og:description" content="Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing is uploaded.">
+<meta property="og:url" content="https://cidrkit.com/subnet-calculator/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f7a5a'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='2.4'%3E%3Cpath d='M16 7v18M8 12h16M8 20h16'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="canonical" href="https://cidrkit.com/subnet-calculator/">
+<link rel="stylesheet" href="/assets/style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Subnet Calculator","url":"https://cidrkit.com/subnet-calculator/","applicationCategory":"DeveloperApplication","operatingSystem":"Any (modern browser)","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing is uploaded."}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Does my IP data get uploaded?","acceptedAnswer":{"@type":"Answer","text":"No. Parsing and arithmetic happen in the same tab; there is no request in the code path at all. The Network panel stays empty while you calculate."}},{"@type":"Question","name":"Why does a /31 show 2 usable hosts instead of 0?","acceptedAnswer":{"@type":"Answer","text":"Because RFC 3021 reserves /31 for point-to-point links, where both addresses are usable — that is the entire reason the size exists. Applying the usual minus-two would report zero hosts for a working link, so this page follows the standard. A /32 gets one host for a comparable reason."}},{"@type":"Question","name":"Can I enter a wildcard mask instead of a netmask?","acceptedAnswer":{"@type":"Answer","text":"Yes. 10.0.0.0 0.255.255.255 is accepted alongside the dotted-netmask and /8 forms. If what you give is neither a valid netmask nor a valid wildcard it is rejected with an explanation, not assumed to be one of them."}},{"@type":"Question","name":"Why did my address change when I typed host bits?","acceptedAnswer":{"@type":"Answer","text":"It should have. 192.168.1.37/24 and 192.168.1.0/24 name the same network, and a network identifier never carries host bits. The page shows you both so nothing changed silently — echoing your typo back at you would hide the useful half of the answer."}},{"@type":"Question","name":"Can it merge a list of CIDRs?","acceptedAnswer":{"@type":"Answer","text":"Yes — the collapse tab. Paste one block per line (or comma-separated) and it returns the minimal equivalent set, dropping anything already inside a larger block. Measured: 50,000 entries in 187.7 ms. It is checked against Python's collapse_addresses on 9 cases (20 capability checks in total, the rest being split and containment), including the alignment trap."}},{"@type":"Question","name":"Does it handle IPv6?","acceptedAnswer":{"@type":"Answer","text":"For arithmetic, yes — including counts up to 2^128, which a plain JavaScript number cannot hold. For the private/reserved flags, no: the IPv6 registries are long enough that half-copying them would be worse than silence, so those fields are omitted rather than approximated."}},{"@type":"Question","name":"Is 100.64.0.0/10 private?","acceptedAnswer":{"@type":"Answer","text":"It is the CGNAT range from RFC 6598 — shared among one carrier's customers, not globally routable, and not RFC 1918. CPython's is_private does not count it as private, so this page does not either; it reports a separate CGNAT flag instead, because \"is this my carrier's NAT space\" is the question people actually have."}},{"@type":"Question","name":"Why is there no Class A/B/C column?","acceptedAnswer":{"@type":"Answer","text":"Classful addressing was superseded by CIDR in 1993. A /22 is \"Class C\" by first octet and a 1,024-address block in fact; the label answers no question the prefix does not answer better."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CIDRKit","item":"https://cidrkit.com/"},{"@type":"ListItem","position":2,"name":"Subnet Calculator","item":"https://cidrkit.com/subnet-calculator/"}]}</script>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/">CIDRKit</a>
+    <nav>
+      <a href="/subnet-calculator/#calc">Calculator</a>
+      <a href="/subnet-calculator/#summarize">Summarize</a>
+      <a href="/subnet-calculator/#split">Split</a>
+      <a href="/subnet-calculator/#find">IP in range</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <h1>Subnet Calculator</h1>
+  <p class="lede">Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing is uploaded.</p>
+
+
+
+
+  <div class="tool">
+    <div class="tabs" role="tablist">
+      <button id="tab-calc" role="tab" aria-selected="true">Subnet calculator</button>
+      <button id="tab-sum" role="tab" aria-selected="false">Collapse a list</button>
+      <button id="tab-split" role="tab" aria-selected="false">Split into subnets</button>
+      <button id="tab-find" role="tab" aria-selected="false">Is this IP inside?</button>
+    </div>
+
+    <section class="panel" id="panel-calc">
+      <label for="net">Network — CIDR, dotted mask, wildcard mask or a range</label>
+      <textarea id="net" rows="2" spellcheck="false" autocomplete="off"
+        placeholder="10.0.0.0/8"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn tiny" id="btn-clear">Clear</button>
+        <span class="grow"></span>
+        <span class="dim">Also accepts 10.0.0.0 255.0.0.0 · 10.0.0.0 0.255.255.255 ·
+          192.168.0.0 - 192.168.1.255</span>
+      </div>
+      <div id="res"></div>
+    </section>
+
+    <section class="panel" id="panel-sum" hidden>
+      <label for="sum-in">CIDR list — one per line, or comma separated</label>
+      <textarea id="sum-in" rows="7" spellcheck="false" autocomplete="off"
+        placeholder="10.0.0.0/24&#10;10.0.1.0/24&#10;10.0.0.128/25"></textarea>
+      <p class="note">Returns the smallest set of blocks covering exactly the same
+      addresses. Anything already inside a larger block is dropped; two blocks merge only
+      when they are the same size, adjacent, and aligned on the parent boundary.</p>
+      <div id="sum-res"><p class="note">One CIDR per line.</p></div>
+    </section>
+
+    <section class="panel" id="panel-split" hidden>
+      <div class="io-head"><span>Network</span></div>
+      <textarea id="split-net" rows="2" spellcheck="false" autocomplete="off"
+        placeholder="192.168.0.0/16"></textarea>
+      <label for="split-want" style="margin-top:10px">Minimum number of equal subnets</label>
+      <input id="split-want" type="number" min="2" step="1" value="8" style="width:120px">
+      <p class="note">Rounds up to the next power of two, because that is what a prefix can
+      actually do.</p>
+      <div id="split-res"><p class="note">Give a network, e.g. 192.168.0.0/16.</p></div>
+    </section>
+
+    <section class="panel" id="panel-find" hidden>
+      <label for="find-addr">Address</label>
+      <input id="find-addr" type="text" spellcheck="false" autocomplete="off"
+        placeholder="10.0.5.7" style="width:100%">
+      <label for="find-net" style="margin-top:10px">Network</label>
+      <input id="find-net" type="text" spellcheck="false" autocomplete="off"
+        placeholder="10.0.0.0/8" style="width:100%">
+      <div id="find-res"><p class="note">Both fields needed.</p></div>
+    </section>
+  </div>
+
+  <div class="prose">
+      <p>Give it anything you actually have on hand: <code>10.0.0.0/8</code>, <code>10.0.0.0 255.0.0.0</code>, the Cisco form <code>10.0.0.0 0.255.255.255</code>, a range like <code>192.168.0.0 - 192.168.1.255</code>, or a bare address, which is read as a single host. It answers with the network address, netmask, wildcard mask, broadcast, usable range, and both counts.</p>
+      <p>The second tab does the job that has no good free tool: take a pasted list of CIDR blocks — a firewall allow-list, a route export — and collapse it into the smallest equivalent set. That is not the same as sorting it. Two blocks merge only when they are the same size, adjacent, <strong>and</strong> aligned on the parent boundary, and the alignment condition is where hand-rolled implementations get it wrong.</p>
+      <p>Nothing is uploaded, and there is no account, no rate limit and no telemetry. Open the Network panel while you work: the only entries are this page's own four files.</p>
+    <h2 id="cidr-to-ip-range">CIDR to IP range</h2>
+    <p>Paste a block such as <code>198.51.100.0/24</code> into the field above and the range is already in the answer: <strong>First usable host</strong> 198.51.100.1, <strong>Last usable host</strong> 198.51.100.254, <strong>Total addresses</strong> 256, <strong>Usable hosts</strong> 254. The two addresses missing between 198.51.100.0 and 198.51.100.255 are the network address and the broadcast address, which is why a firewall object or an ACL usually wants the whole block and a DHCP pool wants the usable pair. The reverse direction works as well: the input accepts <code>192.168.0.0 - 192.168.1.255</code> and answers <code>192.168.0.0/23</code>, on the condition that the range is exactly one aligned block — a ragged range such as <code>192.168.0.1 - 192.168.1.200</code> is refused outright. The error names the smallest block that would cover it — <code>192.168.0.0/23</code>, which adds 56 addresses you did not ask for — and returns nothing, because silently widening a range is how an ACL ends up open to a whole /23.</p><p>Small prefixes follow the interface rules rather than the minus-two rule, and that is measured rather than asserted: <code>192.168.1.1/31</code> reports 2 usable hosts (RFC 3021 point-to-point) and <code>192.168.1.1/32</code> reports 1. For IPv6 the same rows stay exact — <code>2001:db8::/32</code> reports 79,228,162,514,264,337,593,543,950,336 addresses — and the broadcast row is left blank because IPv6 has no broadcast address.</p>
+    <h2>Measured, not promised</h2>
+    <table><thead><tr><th>What</th><th>Size</th><th>Time</th><th>Result</th></tr></thead><tbody><tr><td>One subnet calculation</td><td>200 CIDRs</td><td>0.042 ms each</td><td>fast enough to recompute on every keystroke, which is what it does</td></tr><tr><td>Collapse a list</td><td>1,000 CIDRs</td><td>6.8 ms</td><td>1,000 blocks out</td></tr><tr><td>Collapse a list</td><td>10,000 CIDRs</td><td>35.5 ms</td><td>9,993 blocks out</td></tr><tr><td>Collapse a list</td><td>50,000 CIDRs</td><td>187.7 ms</td><td>49,855 blocks out</td></tr><tr><td>Collapse a worst case</td><td>10,000 /25s that chain-merge</td><td>20.2 ms</td><td>5 blocks out</td></tr><tr><td>Enumerate subnets</td><td>/8 split by +24, first 1,048,576 formatted</td><td>649.6 ms</td><td>16,777,216 counted</td></tr></tbody></table><p>Measured in Chrome 152 on Windows 11. The first row is why the result updates as you type instead of waiting for a button. The 50,000-row collapse is the one that matters in practice — a firewall export nobody wants to tidy by hand — and it took 187.7 ms. Collapsing is <em>not</em> a two-at-a-time containment scan: that version was written first, and it hung the tab at fifty thousand inputs.</p>
+    <h2>Correctness: checked against a reference implementation</h2>
+    <p>The interesting claim about a calculator is not speed. It is whether the answer is right — and for CIDR maths there is an honest way to demonstrate that: compare against something authoritative.</p><p>Every result this page produces is checked against Python's standard-library <code>ipaddress</code> module, the same code that ships inside CPython and the reference most network tooling is regression-tested against. The test vectors are <em>generated from it</em>, not hand-written by someone who thought they knew the answers.</p><ul><li><strong>356 valid inputs</strong>, each compared field by field across the same 16 fields the page renders — <code>cidr</code>, <code>version</code>, network address, netmask, wildcard, broadcast, prefix length, total addresses, usable hosts, first host, last host, and the five IPv4 class flags private / loopback / link-local / multicast / reserved. That is <strong>5,696 field comparisons</strong>, all equal. The three extra flags the panel shows — CGNAT, documentation, benchmarking — are this site's own prefix tables, not cross-checked against CPython, so treat them as ours rather than as the reference answer. IPv6 class flags are reported as unknown instead of guessed.</li><li><strong>15 malformed inputs</strong> that CPython also rejects — this page must reject every one, and say what is wrong rather than echoing "invalid".</li><li><strong>20 capability checks</strong> for collapse, split and containment, including the case that catches most implementations: /25s pasted in pairs that chain-merge upward. The vectors do 768 of them into 3 blocks; the bench does 10,000 into 5..</li></ul><p>Fifty-six assertion groups in total, in a page that ships with the site (<code>/test/</code>). There is no CI behind it: the harness is re-run by hand before each publish, which is the honest version of that sentence. Two real bugs were caught that way before this paragraph was written: an IPv6 formatter that emitted its groups in reverse order, and a mask validator that compared a <code>BigInt</code> against a <code>Number</code> with <code>!==</code>, which made every dotted netmask look invalid. Neither is visible by eye.</p><p>Where a competitor is confidently wrong, it is usually one of three things: applying <code>n − 2</code> to a /31 or /32, reading a wildcard mask as a netmask, or merging two adjacent blocks that are not actually aligned. All three are covered by the vectors above.</p>
+    <h2>What each line means</h2>
+    <table><thead><tr><th>Field</th><th>What it is</th></tr></thead><tbody><tr><td><code>Network address</code></td><td>The first address of the block — all host bits zero. This is the <em>name</em> of the network, not an assignable address.</td></tr><tr><td><code>Netmask</code></td><td>Ones for the network part, zeros for the host part. A /27 is <code>255.255.255.224</code>.</td></tr><tr><td><code>Wildcard mask</code></td><td>The exact inverse of the netmask. Cisco ACLs and <code>iptables</code> take this form, which is why the input box accepts it in either direction.</td></tr><tr><td><code>Broadcast</code></td><td>The last address of the block — all host bits one. Every host on the segment hears it, so it is never assignable.</td></tr><tr><td><code>Usable hosts</code></td><td>Total minus network and broadcast, with the two exceptions below.</td></tr><tr><td><code>First / last host</code></td><td>The assignable range, for when you are handing out static addresses and need the boundaries rather than the arithmetic.</td></tr><tr><td><code>Range class</code></td><td>Private means the set Python's <code>ipaddress</code> calls private — RFC 1918 plus loopback, link-local and the other special-purpose ranges, so <code>198.51.100.0/24</code> does light it up. Then loopback, link-local, multicast and reserved, which are the five cross-checked against CPython; CGNAT, documentation and benchmarking come from this site's own prefix tables.</td></tr></tbody></table>
+    <h2>Why usable hosts are total minus two</h2>
+    <p>Two addresses in every block are spoken for: the network address (how the block is named in routing) and the broadcast address (which every host on the segment hears). So a /24 is 256 addresses but 254 hosts, and a /27 is 32 but 30. It is not padding and not a convention you can skip — configure a DHCP pool that includes the network address and you have taken someone's host.</p><p>Two sizes break the rule, and a calculator that does not know them is a source of real outages:</p><ul><li><strong>/31</strong> — two addresses, <strong>two</strong> usable hosts, per RFC 3021. Point-to-point links use exactly this so neither address is wasted. Subtracting two would report zero hosts for a working link.</li><li><strong>/32</strong> — one address, <strong>one</strong> usable host. There is no separate network or broadcast to remove; this is how you refer to a single host, and it is the right mask for loopbacks and host routes.</li></ul><p>This page reports 2 and 1 respectively because the test vectors include both and CPython agrees. For IPv6 it does not apply minus-two at all: there is no broadcast address, so only the subnet-router anycast address (the first) is reserved and the last address of the block is a usable host — and a /127 or /128 reserves nothing, which is CPython's rule. The vectors carry all three IPv6 cases separately — <code>2001:db8::/126</code> gives <code>::1</code> to <code>::3</code> and 3 hosts, <code>/127</code> gives both ends and 2 hosts, <code>/128</code> gives 1. Prefixes too large to materialise reuse the same rule, which the generator checks against <code>list(net.hosts())</code> on 20 materialisable prefixes (/24-/32 and /118-/128) before applying it to the rest.</p>
+    <h2>CIDR, netmask, wildcard — three spellings, one meaning</h2>
+    <p>These all describe the same block:</p><pre>10.0.0.0/8
+10.0.0.0 255.0.0.0        # dotted netmask
+10.0.0.0 0.255.255.255    # wildcard / hostmask, Cisco ACL form
+10.0.0.0 - 10.255.255.255 # inclusive range</pre><p>The input box accepts all four, and it will not silently reinterpret the third: <code>255.255.0.255</code> is neither a valid netmask (ones must form one run at the top) nor a valid wildcard (ones must form one run at the bottom), so it is rejected with that explanation rather than rounded to something plausible. A mask copied from the wrong column is worth an error message, not a guess.</p><p>One behaviour to know about: paste <code>192.168.1.37/24</code> and you get <code>192.168.1.0/24</code>, because host bits are not part of a network identifier. The page says so and shows the address you came from, instead of pretending you typed something else.</p>
+    <h2>Collapsing a list, and why alignment matters</h2>
+    <p>Two blocks merge into their parent only when all three hold: same prefix length, numerically adjacent, and the left one starts on an even multiple of the parent's size. The third condition is the one people miss.</p><pre>10.0.0.0/25 + 10.0.0.128/25  →  10.0.0.0/24   ✓ adjacent and aligned
+10.0.0.128/25 + 10.0.1.0/25  →  no merge       ✗ adjacent, but not a parent pair</pre><p>That second case is the trap. <code>10.0.0.128/25</code> and <code>10.0.1.0/25</code> sit right next to each other and together span 256 addresses, but they are not a /24, so a tool that prints <code>10.0.0.128/23</code> has produced an invalid network — one that <code>ip address add</code>, a router, or a cloud security group will reject. Try it in the collapse tab and you get two rows back.</p><p>Removing blocks already covered by a larger one is the other half: put <code>10.0.0.0/8</code> next to <code>10.1.2.0/24</code> and the /24 disappears, which is usually the point — fewer rules, same permission set.</p>
+    <h2>Check the answer yourself</h2>
+    <p>Do not take a web page's word for it, including this one. Python is in every developer environment and is what this page is tested against:</p><pre>python3 -c "import ipaddress as i, sys
+n = i.ip_network(sys.argv[1], strict=False)
+print(n, n.network_address, n.netmask,
+      n.hostmask, n.broadcast_address,
+      n.num_addresses)" 10.0.0.37/24</pre><pre># or the dedicated tools
+ipcalc 192.168.1.0/26
+sipcalc 192.168.1.0/26</pre><p>For the collapse tab, cross-check with <code>ipaddress.collapse_addresses</code> — it is four lines and it agrees with this page on every generated vector.</p>
+    <h2>What this page deliberately does not do</h2>
+    <ul><li><strong>No whois, no geolocation, no reverse DNS.</strong> Those need a server, and a server means your ranges leave your machine. Everything here is derived arithmetically from what you typed.</li><li><strong>No IPv6 range classification.</strong> The arithmetic is exact for IPv6 — addresses, masks, ranges and counts up to 2<sup>128</sup>, which is why the engine uses <code>BigInt</code> rather than JS numbers. But the IPv6 private/reserved registries are long, and a partial copy produces confident nonsense, so the flags are omitted for IPv6 instead of guessed.</li><li><strong>No classful columns.</strong> There is no "Class A/B/C" output. That scheme was retired by CIDR in 1993, and showing it gets it copied into configs that will reject it.</li><li><strong>No claim about what you may route.</strong> Whether a block is yours to announce is between you and your RIR.</li></ul>
+    <h2>Frequently asked questions</h2>
+    <details class="faq" open>
+      <summary>Does my IP data get uploaded?</summary>
+      <p>No. Parsing and arithmetic happen in the same tab; there is no request in the code path at all. The Network panel stays empty while you calculate.</p>
+    </details>
+    <details class="faq">
+      <summary>Why does a /31 show 2 usable hosts instead of 0?</summary>
+      <p>Because RFC 3021 reserves /31 for point-to-point links, where both addresses are usable — that is the entire reason the size exists. Applying the usual minus-two would report zero hosts for a working link, so this page follows the standard. A /32 gets one host for a comparable reason.</p>
+    </details>
+    <details class="faq">
+      <summary>Can I enter a wildcard mask instead of a netmask?</summary>
+      <p>Yes. <code>10.0.0.0 0.255.255.255</code> is accepted alongside the dotted-netmask and <code>/8</code> forms. If what you give is neither a valid netmask nor a valid wildcard it is rejected with an explanation, not assumed to be one of them.</p>
+    </details>
+    <details class="faq">
+      <summary>Why did my address change when I typed host bits?</summary>
+      <p>It should have. <code>192.168.1.37/24</code> and <code>192.168.1.0/24</code> name the same network, and a network identifier never carries host bits. The page shows you both so nothing changed silently — echoing your typo back at you would hide the useful half of the answer.</p>
+    </details>
+    <details class="faq">
+      <summary>Can it merge a list of CIDRs?</summary>
+      <p>Yes — the collapse tab. Paste one block per line (or comma-separated) and it returns the minimal equivalent set, dropping anything already inside a larger block. Measured: 50,000 entries in 187.7 ms. It is checked against Python's <code>collapse_addresses</code> on 9 cases (20 capability checks in total, the rest being split and containment), including the alignment trap.</p>
+    </details>
+    <details class="faq">
+      <summary>Does it handle IPv6?</summary>
+      <p>For arithmetic, yes — including counts up to 2^128, which a plain JavaScript number cannot hold. For the private/reserved flags, no: the IPv6 registries are long enough that half-copying them would be worse than silence, so those fields are omitted rather than approximated.</p>
+    </details>
+    <details class="faq">
+      <summary>Is 100.64.0.0/10 private?</summary>
+      <p>It is the CGNAT range from RFC 6598 — shared among one carrier's customers, not globally routable, and not RFC 1918. CPython's <code>is_private</code> does not count it as private, so this page does not either; it reports a separate CGNAT flag instead, because "is this my carrier's NAT space" is the question people actually have.</p>
+    </details>
+    <details class="faq">
+      <summary>Why is there no Class A/B/C column?</summary>
+      <p>Classful addressing was superseded by CIDR in 1993. A /22 is "Class C" by first octet and a 1,024-address block in fact; the label answers no question the prefix does not answer better.</p>
+    </details>
+  </div>
+
+</main>
+<footer class="site">
+  <div class="wrap">
+    <p>Every calculation runs inside your browser tab. Nothing you paste is sent to a server, because there is no server call in the code path.</p>
+    <div class="row">
+      <a href="/subnet-calculator/">Subnet Calculator</a>
+    </div>
+  </div>
+</footer>
+<script src="/assets/cidr.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>

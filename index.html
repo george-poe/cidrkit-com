@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CIDRKit — Subnet and CIDR arithmetic that runs in your browser, checked against Python&#x27;s ipaddress field by field.</title>
+<meta name="description" content="Subnet and CIDR arithmetic that runs in your browser, checked against Python&#x27;s ipaddress field by field.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CIDRKit">
+<meta property="og:title" content="CIDRKit — Subnet and CIDR arithmetic that runs in your browser, checked against Python&#x27;s ipaddress field by field.">
+<meta property="og:description" content="Subnet and CIDR arithmetic that runs in your browser, checked against Python&#x27;s ipaddress field by field.">
+<meta property="og:url" content="https://cidrkit.com/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f7a5a'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='2.4'%3E%3Cpath d='M16 7v18M8 12h16M8 20h16'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="canonical" href="https://cidrkit.com/">
+<link rel="stylesheet" href="/assets/style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"CIDRKit","url":"https://cidrkit.com/","description":"Subnet and CIDR arithmetic that runs in your browser, checked against Python's ipaddress field by field."}</script>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/">CIDRKit</a>
+    <nav>
+      <a href="/subnet-calculator/#calc">Calculator</a>
+      <a href="/subnet-calculator/#summarize">Summarize</a>
+      <a href="/subnet-calculator/#split">Split</a>
+      <a href="/subnet-calculator/#find">IP in range</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <h1>CIDRKit</h1>
+  <p class="lede">Subnet and CIDR arithmetic that runs in your browser, checked against Python&#x27;s ipaddress field by field.</p>
+  <div class="cards">
+    <a class="card" href="/subnet-calculator/"><div class="t">Subnet Calculator</div><div class="d">Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses …</div></a>
+  </div>
+  <div class="prose">
+      <p>Subnet and CIDR arithmetic: network address, netmask, wildcard mask, broadcast, the usable range, both counts, and range classification for IPv4. Accepts a prefix, a dotted mask, a Cisco wildcard mask or an inclusive address range, and it reads IPv6 exactly — including counts up to 2^128, which is why the engine works in BigInt rather than numbers.</p>
+      <p>It also does the two jobs that are annoying by hand: collapsing a pasted list of CIDR blocks into the smallest equivalent set (50,000 entries in 187.7 ms), and splitting one block into equal smaller subnets with the per-subnet host count spelled out, including the /31 and /32 cases where the usual minus-two rule is wrong.</p>
+      <p>Every number this site prints is checked against Python's standard-library <code>ipaddress</code> module — 356 valid inputs compared field by field, 15 malformed inputs that must be rejected, and 20 capability cases for collapse, split and containment. Nothing is uploaded; there is no server call anywhere in the code path.</p>
+  </div>
+
+</main>
+<footer class="site">
+  <div class="wrap">
+    <p>Every calculation runs inside your browser tab. Nothing you paste is sent to a server, because there is no server call in the code path.</p>
+    <div class="row">
+      <a href="/subnet-calculator/">Subnet Calculator</a>
+    </div>
+  </div>
+</footer>
+<script src="/assets/cidr.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>

@@ -15,7 +15,7 @@
   <meta name="robots" content="noindex,follow">
 <link rel="canonical" href="https://cidrkit.com/privacy/">
 <link rel="stylesheet" href="/assets/style.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"PrivacyPolicy","name":"Privacy","url":"https://cidrkit.com/privacy/","dateModified":"2026-09-13"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"PrivacyPolicy","name":"Privacy","url":"https://cidrkit.com/privacy/","dateModified":"2026-09-14"}</script>
 </head>
 <body>
 <header class="site">
@@ -32,7 +32,7 @@
 <main class="wrap">
   <h1>Privacy</h1>
   <p class="lede">What happens to your data on this site, stated precisely.</p>
-  <p class="note">Last updated 2026-09-13. This page describes the site as it is built. If a sentence here stops matching the code, the sentence is the bug — say so and it gets fixed.</p>
+  <p class="note">Last updated 2026-09-14. This page describes the site as it is built. If a sentence here stops matching the code, the sentence is the bug — say so and it gets fixed.</p>
   <div class="prose">
   <h2 id="nothing-you-type-is-transmitted">Nothing you type is transmitted</h2>
       <p>The calculator, the collapse list, the split planner and the containment check are arithmetic on integers. They run in the page you already downloaded: there is no upload endpoint, no backend, no account system and no database behind this site.</p>
@@ -54,8 +54,10 @@
   <h2 id="how-the-numbers-are-checked">How the numbers are checked</h2>
       <p>Every field the calculator reports is compared against Python's standard-library `ipaddress` module, on 356 generated prefixes covering both address families and the boundary cases, and on 15 malformed inputs that both implementations must reject. The vectors and the comparison run in the browser, on this origin: <a href="/test/">/test/</a> shows the result of each assertion. That page is not indexed and is not a promise — it is the test, executing.</p>
       <p>Where the two disagree, the bug is in this site and gets fixed here rather than explained away.</p>
-  <h2 id="contact">Contact</h2>
-      <p>A wrong number, or a sentence on this page that no longer matches reality: open an issue on <a href="https://github.com/george-poe/cidrkit-com">https://github.com/george-poe/cidrkit-com</a>. The pages and their tests are built in that repository, so a report lands next to the code that would have to change. There is no email list.</p>
+  <h2 id="feedback">Feedback</h2>
+      <p>A wrong number, or a sentence on this page that no longer matches reality: the quiet link that appears next to a failure message, and the Feedback link in the footer, open a new issue on <a href="https://github.com/george-poe/cidrkit-com">https://github.com/george-poe/cidrkit-com</a> with a short note already typed in it: the page path, which tab the failure happened on, the date of the build you were looking at, and then whatever that failure had to give — the length in bytes of what you typed together with the error message exactly as this page printed it, or a one-line note naming the limit you hit. It is an ordinary link, so there is no separate submission channel for feedback: what appears in the form is what the link put there, on screen before anything is sent, and you can read it, change it, or delete it. The 404 page prefills a title and nothing else, because there is no run to report there.</p>
+      <p>One limit stated plainly rather than glossed: an error message can quote a short fragment of what you typed, because that is what makes an error message useful — the parse errors here name the octet or the IPv6 group that did not parse, repeated as you wrote it. Those fields are length-capped at 120 characters for that reason, what you typed is never attached whole, and when the note still runs long it is trimmed rather than sent in full. If a fragment in the pre-filled note is sensitive, cut it before sending — once sent, the issue is public and GitHub keeps it under its own terms, not ours.</p>
+      <p>The repository is where these pages and their tests are built, so a report lands next to the code that would have to change. Nobody but the person who builds this site reads it. There is no email list.</p>
   </div>
 
 </main>
@@ -65,6 +67,7 @@
     <div class="row">
       <a href="/subnet-calculator/">Subnet Calculator</a>
       <a href="/privacy/">Privacy</a>
+<a href="https://github.com/george-poe/cidrkit-com/issues/new?title=Feedback" target="_blank" rel="noopener">Feedback</a>
     </div>
   </div>
 </footer>

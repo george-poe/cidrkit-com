@@ -17,6 +17,36 @@
     });
   }
 
+  /* One link, zero requests: the browser opens GitHub (or the visitor's mail
+   * client) with a note pre-filled from run diagnostics. The input itself is
+   * never read here — only its length is. tools/feedback.py audits every call
+   * site at build time, and test/index.html checks the field caps with a canary
+   * string, because "we only send the size" is the kind of sentence that rots
+   * the moment someone adds one more field to make triage easier.
+   */
+  function feedbackLink(label, extra) {
+    var url = E.reportURL(extra);
+    if (!url) return "";
+    return '<a class="fb" href="' + esc(url) + '" target="_blank" rel="noopener">' +
+           esc(label) + "</a>";
+  }
+
+  function feedbackEl(label, extra) {
+    // Same contract as feedbackLink, for the boxes built with createElement
+    // rather than an innerHTML string. Every panel here is a string today, so
+    // this is the half of the pair a future call site uses — not a second path
+    // to send anything: still one link, still no request until it is clicked.
+    var url = E.reportURL(extra);
+    if (!url) return null;
+    var a = document.createElement("a");
+    a.className = "fb";
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = label;
+    return a;
+  }
+
   /* ── Tabs ─────────────────────────────────────────────────── */
   var TABS = ["calc", "sum", "split", "find"];
   function showTab(name) {
@@ -68,8 +98,13 @@
     if (!txt) { box.innerHTML = '<p class="note">Type or paste a network above.</p>'; return; }
     var r = E.analyze(txt);
     if (!r.ok) {
+      // The link rides next to the failure, not in a footer: a parse error is the
+      // one moment a visitor both has context and feels the tool let them down.
       box.innerHTML = '<div class="errbox"><strong>Cannot parse that</strong>' +
-        '<div class="err-msg">' + esc(r.error.message) + "</div></div>";
+        '<div class="err-msg">' + esc(r.error.message) + "</div>" +
+        feedbackLink("Tell us and we will fix it", {
+          tool: "calculator", bytes: txt.length, error: r.error.message
+        }) + "</div>";
       return;
     }
     var bits = [];
@@ -125,7 +160,10 @@
       var out = E.summarize(list);
     } catch (e) {
       box.innerHTML = '<div class="errbox"><strong>Cannot parse that</strong><div class="err-msg">' +
-        esc(e.message) + "</div></div>";
+        esc(e.message) + "</div>" +
+        feedbackLink("Tell us and we will fix it", {
+          tool: "collapse", bytes: txt.length, error: e.message
+        }) + "</div>";
       return;
     }
     var ms = (performance.now() - t0).toFixed(1);
@@ -151,12 +189,18 @@
     var r = E.analyze(net);
     if (!r.ok) {
       box.innerHTML = '<div class="errbox"><strong>Cannot parse that</strong><div class="err-msg">' +
-        esc(r.error.message) + "</div></div>";
+        esc(r.error.message) + "</div>" +
+        feedbackLink("Tell us and we will fix it", {
+          tool: "split", bytes: net.length, error: r.error.message
+        }) + "</div>";
       return;
     }
     if (!(want > 1)) {
       box.innerHTML = '<div class="errbox"><strong>How many subnets?</strong>' +
-        '<div class="err-msg">Enter 2 or more.</div></div>';
+        '<div class="err-msg">Enter 2 or more.</div>' +
+        feedbackLink("too small a number for you? tell us", {
+          tool: "split", notice: "the split count has to be 2 or more"
+        }) + "</div>";
       return;
     }
     var diff = 0;
@@ -202,7 +246,10 @@
         esc(addr) + (inIt ? " is inside " : " is NOT inside ") + esc(cidr) + "</p>";
     } catch (e) {
       box.innerHTML = '<div class="errbox"><strong>Cannot parse that</strong><div class="err-msg">' +
-        esc(e.message) + "</div></div>";
+        esc(e.message) + "</div>" +
+        feedbackLink("Tell us and we will fix it", {
+          tool: "find", bytes: addr.length, error: e.message
+        }) + "</div>";
     }
   }
 

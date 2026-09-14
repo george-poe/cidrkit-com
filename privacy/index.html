@@ -64,6 +64,7 @@
       <p>A wrong number, or a sentence on this page that no longer matches reality: the quiet link that appears next to a failure message, and the Feedback link in the footer, open a new issue on <a href="https://github.com/george-poe/cidrkit-com">https://github.com/george-poe/cidrkit-com</a> with a short note already typed in it: the page path, which tab the failure happened on, the date of the build you were looking at, and then whatever that failure had to give — the length in bytes of what you typed together with the error message exactly as this page printed it, or a one-line note naming the limit you hit. It is an ordinary link, so there is no separate submission channel for feedback: what appears in the form is what the link put there, on screen before anything is sent, and you can read it, change it, or delete it. The 404 page prefills a title and nothing else, because there is no run to report there.</p>
       <p>One limit stated plainly rather than glossed: an error message can quote a short fragment of what you typed, because that is what makes an error message useful — the parse errors here name the octet or the IPv6 group that did not parse, repeated as you wrote it. Those fields are length-capped at 120 characters for that reason, what you typed is never attached whole, and when the note still runs long it is trimmed rather than sent in full. If a fragment in the pre-filled note is sensitive, cut it before sending — once sent, the issue is public and GitHub keeps it under its own terms, not ours.</p>
       <p>The repository is where these pages and their tests are built, so a report lands next to the code that would have to change. Nobody but the person who builds this site reads it. There is no email list.</p>
+      <p>The footer of every page also lists a mailbox, feedback@cidrkit.com. It is a different channel with different properties: nothing is generated into it. There is no page path, no byte count, no error text in the envelope — whatever arrives is only what you typed, which is why a useful mail usually quotes the error itself. Mail to that address is relayed by Cloudflare Email Routing to an outside mailbox; the pages still send nothing, and no request this site makes carries your document.</p>
   </div>
 
 </main>
@@ -73,7 +74,7 @@
     <div class="row">
       <a href="/subnet-calculator/">Subnet Calculator</a>
       <a href="/privacy/">Privacy</a>
-<a href="https://github.com/george-poe/cidrkit-com/issues/new?title=Feedback" target="_blank" rel="noopener">Feedback</a>
+<a href="https://github.com/george-poe/cidrkit-com/issues/new?title=Feedback" target="_blank" rel="noopener">Feedback</a> <a href="mailto:feedback@cidrkit.com?subject=Feedback">feedback@cidrkit.com</a>
     </div>
   </div>
 </footer>

@@ -40,6 +40,9 @@
   <h2 id="nothing-you-type-is-transmitted">Nothing you type is transmitted</h2>
       <p>The calculator, the collapse list, the split planner and the containment check are arithmetic on integers. They run in the page you already downloaded: there is no upload endpoint, no backend, no account system and no database behind this site.</p>
       <p>The engine ships with the page. Open `<code>view-source:https://cidrkit.com/assets/cidr.js</code>` and search for `fetch`, `XMLHttpRequest` or `sendBeacon` — none of those identifiers appear anywhere in it. That is a check you can actually run, not a promise.</p>
+  <h2 id="the-share-link-and-why-it-is-not-an-upload">The share link, and why it is not an upload</h2>
+      <p>Copy link writes the current tab and what you typed into the fragment of the address — the part after the `#`. Browsers do not transmit a fragment: it is not in the HTTP request, it is not in any `Referer` header, and this site has no server that could record it. There is no account, no saved link and no recent list, so nothing is kept on our side either.</p>
+      <p>What does leave is whatever you do with the address afterwards. Paste that link into a chat, a ticket or an email and its contents travel with it — the fragment is readable by anyone who can read the message. If that matters, share the CIDR notation instead: it says the same thing and is safe to repeat.</p>
   <h2 id="no-registry-lookups-on-purpose">No registry lookups, on purpose</h2>
       <p>A subnet calculator can be made to look clever by asking IANA who owns a block. This one does not: it reports the categories from RFC 6890 as compiled into the code, and it will tell you when a range is unallocated-looking rather than pretend to know. Asking a registry would mean your network plan left your browser, and a network plan is exactly the sort of thing worth keeping local.</p>
       <p>The same reasoning is why there is no `whois` button here.</p>

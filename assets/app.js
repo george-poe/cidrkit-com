@@ -8,6 +8,46 @@
   "use strict";
   var E = self.CidrEngine;
   var RENDER_CAP = 2000;      // list render cap; past it, point the user at download
+  var curTab = "calc";
+
+  /* ── Shareable link ──────────────────────────────────────────────
+     The tab and what you typed go into the URL **fragment**. A fragment is not
+     transmitted: absent from the HTTP request line, absent from any Referer, and
+     there is no server here that could log it. Nothing is stored either — there is
+     nowhere to store it. Values restored from the address go in through .value,
+     never innerHTML, so a shared link cannot put markup into the page. */
+  var SHARE_FIELDS = {
+    calc: ["net"], sum: ["sum-in"], split: ["split-net", "split-want"],
+    find: ["find-addr", "find-net"], range: ["range-in"]
+  };
+
+  function shareHash() {
+    var ids = SHARE_FIELDS[curTab] || [], parts = [];
+    ids.forEach(function (id) {
+      var e = $(id);
+      if (e && e.value.trim()) parts.push(id + "=" + encodeURIComponent(e.value.trim()));
+    });
+    return "#tab=" + encodeURIComponent(curTab) + (parts.length ? "&" + parts.join("&") : "");
+  }
+
+  function syncHash() {
+    var h = shareHash();
+    if (h !== location.hash) history.replaceState(null, "", h);
+  }
+
+  function readHash() {
+    var raw = (location.hash || "").replace(/^#/, "");
+    if (raw.indexOf("tab=") !== 0) return null;   // an in-page anchor (#cidr-to-ip-range) is not a share link
+    var out = {};
+    raw.split("&").forEach(function (kv) {
+      var i = kv.indexOf("=");
+      if (i < 0) return;
+      try {
+        out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, " "));
+      } catch (e) { /* half an escape: drop that field, never take the page down */ }
+    });
+    return out;
+  }
   var DL_CAP = 200000;        // download cap; past it the browser dies on the spot
 
   function $(id) { return document.getElementById(id); }
@@ -48,8 +88,9 @@
   }
 
   /* ── Tabs ─────────────────────────────────────────────────── */
-  var TABS = ["calc", "sum", "split", "find"];
+  var TABS = ["calc", "sum", "split", "find", "range"];
   function showTab(name) {
+    curTab = name;
     TABS.forEach(function (t) {
       var p = $("panel-" + t), b = $("tab-" + t);
       if (p) p.hidden = (t !== name);
@@ -284,12 +325,49 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
   }
 
+  /* ── Range → CIDR set ───────────────────────────────────────────── */
+  function renderRange() {
+    var box = $("range-res"), el = $("range-in");
+    var txt = (el.value || "").trim();
+    if (!txt) { box.innerHTML = '<p class="note">Give a range, e.g. 10.0.0.5 - 10.0.0.200.</p>'; rangeLines = []; return; }
+    var r = E.rangeToCidr(txt);
+    if (!r.ok) {
+      rangeLines = [];
+      box.innerHTML = '<div class="errbox"><strong>Cannot read that range</strong>' +
+        '<div class="err-msg">' + esc(r.error.message) + '</div>' +
+        feedbackLink("Tell us and we will fix it", { tool: "range", error: r.error.message }) +
+        "</div>";
+      return;
+    }
+    rangeLines = r.blocks.slice();
+    var rows = r.blocks.map(function (b, i) {
+      return "<tr><td>" + (i + 1) + "</td><td><code>" + esc(b) + "</code></td></tr>";
+    }).join("");
+    box.innerHTML = '<table class="kv"><tbody>' +
+      '<tr><th>Blocks</th><td>' + r.count + (r.aligned? " — the range is already one aligned block": "") + "</td></tr>" +
+      '<tr><th>Addresses covered</th><td>' + big(r.total) + " (" + r.total + ")</td></tr>" +
+      '<tr><th>Family</th><td>IPv' + (r.version === 6? "6": "4") + "</td></tr>" +
+      '<tr><th>Check</th><td>blocks sum to ' + esc(r.sumCheck) + " — the same number</td></tr>" +
+      "</tbody></table>" +
+      '<details open><summary>The set, in order</summary><div class="io-head"><span>#</span><span>CIDR</span></div>' +
+      '<table class="kv list"><tbody>' + rows + "</tbody></table></details>";
+  }
+  var rangeLines = [];
+  if ($("tab-range")) $("tab-range").addEventListener("click", renderRange);
+  live("range-in", renderRange);
+  if ($("btn-range-copy")) $("btn-range-copy").addEventListener("click", function () {
+    copy(rangeLines.join("\n"), $("btn-range-copy"));
+  });
+  if ($("btn-range-dl")) $("btn-range-dl").addEventListener("click", function () {
+    download(rangeLines.join("\n") + "\n", "cidr-set.txt");
+  });
+
   /* recompute on every keystroke: 0.042 ms per call, no need to debounce to seconds */
   function live(id, fn) {
     var el = $(id);
     if (!el) return;
     el.addEventListener("input", function () {
-      requestAnimationFrame(fn);
+      requestAnimationFrame(function () { fn(); syncHash(); });
     });
   }
   live("net", renderCalc);
@@ -305,8 +383,21 @@
     $("net").focus();
   });
 
-  var initial = (location.hash || "").slice(1);
+  var shared = readHash();
+  var initial = shared && shared.tab ? shared.tab: (location.hash || "").slice(1);
   if (TABS.indexOf(initial) < 0) initial = "calc";
+  if (shared) {
+    Object.keys(shared).forEach(function (k) {
+      if (k === "tab") return;
+      var el = $(k);
+      if (el) el.value = shared[k];            // .value only: a shared link must not be able to inject markup
+    });
+  }
   showTab(initial);
-  renderCalc(); renderSum(); renderSplit(); renderFind();
+  renderCalc(); renderSum(); renderSplit(); renderFind(); renderRange();
+  syncHash();
+  if ($("btn-link")) $("btn-link").addEventListener("click", function () {
+    syncHash();
+    copy(location.href, $("btn-link"));
+  });
 })();

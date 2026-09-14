@@ -46,6 +46,7 @@
       <button id="tab-sum" role="tab" aria-selected="false">Collapse a list</button>
       <button id="tab-split" role="tab" aria-selected="false">Split into subnets</button>
       <button id="tab-find" role="tab" aria-selected="false">Is this IP inside?</button>
+      <button id="tab-range" role="tab" aria-selected="false">Range to CIDR set</button>
     </div>
 
     <section class="panel" id="panel-calc">
@@ -59,6 +60,9 @@
           192.168.0.0 - 192.168.1.255</span>
       </div>
       <div id="res"></div>
+      <p class="note">Need this exact input on another machine? Copy link carries it in
+      the part of the address the browser never sends anywhere.
+      <button class="btn tiny" id="btn-link">Copy link</button></p>
     </section>
 
     <section class="panel" id="panel-sum" hidden>
@@ -91,14 +95,32 @@
         placeholder="10.0.0.0/8" style="width:100%">
       <div id="find-res"><p class="note">Both fields needed.</p></div>
     </section>
+
+    <section class="panel" id="panel-range" hidden>
+      <label for="range-in">IP range — start and end, aligned or not</label>
+      <textarea id="range-in" rows="2" spellcheck="false" autocomplete="off"
+        placeholder="10.0.0.5 - 10.0.0.200"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn tiny" id="btn-range-copy">Copy CIDR list</button>
+        <button class="btn tiny" id="btn-range-dl">Download</button>
+        <span class="grow"></span>
+        <span class="dim">An en dash or the word &ldquo;to&rdquo; works too</span>
+      </div>
+      <p class="note">Breaks the range into the smallest set of CIDR blocks that covers
+      exactly those addresses — no more, no less. Nothing here loosens your range into the
+      next aligned block; that is what the calculator above refuses to do on purpose.</p>
+      <div id="range-res"><p class="note">Give a range, e.g. 10.0.0.5 - 10.0.0.200.</p></div>
+    </section>
   </div>
 
   <div class="prose">
       <p>Give it anything you actually have on hand: <code>10.0.0.0/8</code>, <code>10.0.0.0 255.0.0.0</code>, the Cisco form <code>10.0.0.0 0.255.255.255</code>, a range like <code>192.168.0.0 - 192.168.1.255</code>, or a bare address, which is read as a single host. It answers with the network address, netmask, wildcard mask, broadcast, usable range, and both counts.</p>
       <p>The second tab does the job that has no good free tool: take a pasted list of CIDR blocks — a firewall allow-list, a route export — and collapse it into the smallest equivalent set. That is not the same as sorting it. Two blocks merge only when they are the same size, adjacent, <strong>and</strong> aligned on the parent boundary, and the alignment condition is where hand-rolled implementations get it wrong.</p>
-      <p>Your input never leaves the tab, and there is no account and no rate limit. Open the Network panel while you work: besides the ad tag this build loads, the only entries are the page's own four files, and none of them carries what you typed.</p>
+      <p>Your input never leaves the tab — the share link keeps it in the address fragment, which browsers do not transmit, and there is no account and no rate limit. Open the Network panel while you work: besides the ad tag this build loads, the only entries are the page's own four files, and none of them carries what you typed.</p>
     <h2 id="cidr-to-ip-range">CIDR to IP range</h2>
-    <p>Paste a block such as <code>198.51.100.0/24</code> into the field above and the range is already in the answer: <strong>First usable host</strong> 198.51.100.1, <strong>Last usable host</strong> 198.51.100.254, <strong>Total addresses</strong> 256, <strong>Usable hosts</strong> 254. The two addresses missing between 198.51.100.0 and 198.51.100.255 are the network address and the broadcast address, which is why a firewall object or an ACL usually wants the whole block and a DHCP pool wants the usable pair. The reverse direction works as well: the input accepts <code>192.168.0.0 - 192.168.1.255</code> and answers <code>192.168.0.0/23</code>, on the condition that the range is exactly one aligned block — a ragged range such as <code>192.168.0.1 - 192.168.1.200</code> is refused outright. The error names the smallest block that would cover it — <code>192.168.0.0/23</code>, which adds 56 addresses you did not ask for — and returns nothing, because silently widening a range is how an ACL ends up open to a whole /23.</p><p>Small prefixes follow the interface rules rather than the minus-two rule, and that is measured rather than asserted: <code>192.168.1.1/31</code> reports 2 usable hosts (RFC 3021 point-to-point) and <code>192.168.1.1/32</code> reports 1. For IPv6 the same rows stay exact — <code>2001:db8::/32</code> reports 79,228,162,514,264,337,593,543,950,336 addresses — and the broadcast row is left blank because IPv6 has no broadcast address.</p>
+    <p>Paste a block such as <code>198.51.100.0/24</code> into the field above and the range is already in the answer: <strong>First usable host</strong> 198.51.100.1, <strong>Last usable host</strong> 198.51.100.254, <strong>Total addresses</strong> 256, <strong>Usable hosts</strong> 254. The two addresses missing between 198.51.100.0 and 198.51.100.255 are the network address and the broadcast address, which is why a firewall object or an ACL usually wants the whole block and a DHCP pool wants the usable pair. The reverse direction works as well: the input accepts <code>192.168.0.0 - 192.168.1.255</code> and answers <code>192.168.0.0/23</code>, on the condition that the range is exactly one aligned block — a ragged range such as <code>192.168.0.1 - 192.168.1.200</code> is refused there on purpose — the calculator answers one network, and a ragged range is not one network. The error names the smallest block that would cover it, and the Range to CIDR set tab splits the same input into the aligned blocks that cover it exactly. The error names the smallest block that would cover it — <code>192.168.0.0/23</code>, which adds 56 addresses you did not ask for — and returns nothing, because silently widening a range is how an ACL ends up open to a whole /23.</p><p>Small prefixes follow the interface rules rather than the minus-two rule, and that is measured rather than asserted: <code>192.168.1.1/31</code> reports 2 usable hosts (RFC 3021 point-to-point) and <code>192.168.1.1/32</code> reports 1. For IPv6 the same rows stay exact — <code>2001:db8::/32</code> reports 79,228,162,514,264,337,593,543,950,336 addresses — and the broadcast row is left blank because IPv6 has no broadcast address.</p>
+    <h2 id="range-to-cidr">IP range to CIDR</h2>
+    <p>Paste <code>10.0.0.5 - 10.0.0.200</code> into the <strong>Range to CIDR set</strong> tab and you get back <code>10.0.0.5/32</code>, <code>10.0.0.6/31</code>, <code>10.0.0.8/29</code>, <code>10.0.0.16/28</code>, <code>10.0.0.32/27</code>, <code>10.0.0.64/26</code>, <code>10.0.0.128/26</code>, <code>10.0.0.192/29</code>, <code>10.0.0.200/32</code> — nine blocks, 196 addresses, exactly the range you asked for and not one address more. That is the answer a firewall or a route object needs when a range was handed to you by someone who did not think about alignment.</p><p>Why the block count has a ceiling: at each step the algorithm takes the largest block that is aligned at the current address and still fits under the end, so one block per bit can be spent climbing out of a ragged start and one again climbing down to a ragged end. <strong>64 blocks max for IPv4, 256 for IPv6</strong>, whatever the size of the range — the list cannot blow up on you.</p><p>The set is minimal in the strict sense: no two of its blocks can be merged into a valid larger block. That property is not asserted here, it is checked — every one of the generated answer sets was fed through <code>ipaddress.collapse_addresses</code> and came back unchanged, and adjacency plus the address total are re-checked per case in the test page this build ships.</p>
     <h2>Measured, not promised</h2>
     <table><thead><tr><th>What</th><th>Size</th><th>Time</th><th>Result</th></tr></thead><tbody><tr><td>One subnet calculation</td><td>200 CIDRs</td><td>0.042 ms each</td><td>fast enough to recompute on every keystroke, which is what it does</td></tr><tr><td>Collapse a list</td><td>1,000 CIDRs</td><td>6.8 ms</td><td>1,000 blocks out</td></tr><tr><td>Collapse a list</td><td>10,000 CIDRs</td><td>35.5 ms</td><td>9,993 blocks out</td></tr><tr><td>Collapse a list</td><td>50,000 CIDRs</td><td>187.7 ms</td><td>49,855 blocks out</td></tr><tr><td>Collapse a worst case</td><td>10,000 /25s that chain-merge</td><td>20.2 ms</td><td>5 blocks out</td></tr><tr><td>Enumerate subnets</td><td>/8 split by +24, first 1,048,576 formatted</td><td>649.6 ms</td><td>16,777,216 counted</td></tr></tbody></table><p>Measured in Chrome 152 on Windows 11. The first row is why the result updates as you type instead of waiting for a button. The 50,000-row collapse is the one that matters in practice — a firewall export nobody wants to tidy by hand — and it took 187.7 ms. Collapsing is <em>not</em> a two-at-a-time containment scan: that version was written first, and it hung the tab at fifty thousand inputs.</p>
     <h2>Correctness: checked against a reference implementation</h2>

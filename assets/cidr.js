@@ -511,6 +511,55 @@
   }
 
 /* FB-BLOCK:BEGIN */
+  /* ── Range → minimal CIDR set ─────────────────────────────────────
+   * Greedy, the same shape every IPAM tool uses: at the current address take the
+   * largest block that is aligned there and still fits under the end. The vectors in
+   * test/vectors.json come from Python's ipaddress, and each set there is proven
+   * minimal by collapse_addresses — a different algorithm — so this function has a
+   * referee rather than an opinion. Structural bound: at most 2 blocks per bit, so
+   * 64 for IPv4 and 256 for IPv6, whatever the range.
+   */
+  function rangeToCidr(text) {
+    var t = String(text == null ? "" : text).trim();
+    if (!t) {
+      return { ok: false, error: { message: "Nothing to work with. Give it a range such as 10.0.0.5 - 10.0.0.200" } };
+    }
+    var m = t.match(/^(\S+)\s*(?:-|\u2013|\u2014|to)\s*(\S+)$/i);
+    if (!m) {
+      return { ok: false, error: { message: 'Two endpoints are needed: "start - end". Got "' + t.slice(0, 48) + '"' } };
+    }
+    var v6 = m[1].indexOf(":") >= 0 || m[2].indexOf(":") >= 0;
+    var oneV6 = m[1].indexOf(":") >= 0, otherV6 = m[2].indexOf(":") >= 0;
+    if (oneV6 !== otherV6) {
+      return { ok: false, error: { message: "One end is IPv6 and the other is IPv4 — a range lives in one address family" } };
+    }
+    var ver = v6 ? 6 : 4, bits = bitsOf(ver);
+    var lo, hi;
+    try {
+      lo = v6 ? parseV6(m[1]) : parseV4(m[1]);
+      hi = v6 ? parseV6(m[2]) : parseV4(m[2]);
+    } catch (e) {
+      return { ok: false, error: { message: (e && e.message) ? String(e.message) : "That is not an address I can read" } };
+    }
+    if (hi < lo) {
+      return { ok: false, error: { message: "The range is backwards: " + m[1] + " is above " + m[2] + "" } };
+    }
+    var blocks = [], cur = lo, total = 0n;
+    while (cur <= hi) {
+      var align = cur === 0n ? Number(bits) : bitLength(cur & (0n - cur)) - 1;
+      var room = bitLength(hi - cur + 1n) - 1;
+      var host = align < room? align: room;
+      blocks.push(formatAddr(cur, ver) + "/" + (Number(bits) - host));
+      cur += 1n << BigInt(host);
+      total += 1n << BigInt(host);
+    }
+    return {
+      ok: true, version: ver, blocks: blocks, count: blocks.length,
+      total: (hi - lo + 1n).toString(), sumCheck: total.toString(),
+      aligned: blocks.length === 1
+    };
+  }
+
   /* ── Feedback prefill ───────────────────────────────────────────────
      A visitor hitting an error gets one link that opens a note *they* send.
      Nothing is sent by the page itself: no fetch, no beacon, no request until
@@ -617,6 +666,7 @@
     formatV6: formatV6,
     parseV6: parseV6,
     CidrError: CidrError,
+    rangeToCidr: rangeToCidr,
     reportURL: reportURL,
     fbClip: fbClip,
     FB_KEYS: FB_KEYS,

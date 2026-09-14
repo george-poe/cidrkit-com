@@ -8538,6 +8538,352 @@
    "expect": false
   }
  ],
+ "ranges": [
+  {
+   "input": "10.0.0.5 - 10.0.0.200",
+   "expect": {
+    "version": 4,
+    "total": "196",
+    "count": 9,
+    "aligned": false,
+    "blocks": [
+     "10.0.0.5/32",
+     "10.0.0.6/31",
+     "10.0.0.8/29",
+     "10.0.0.16/28",
+     "10.0.0.32/27",
+     "10.0.0.64/26",
+     "10.0.0.128/26",
+     "10.0.0.192/29",
+     "10.0.0.200/32"
+    ],
+    "first": "10.0.0.5/32",
+    "last": "10.0.0.200/32"
+   }
+  },
+  {
+   "input": "192.168.0.1 - 192.168.1.200",
+   "expect": {
+    "version": 4,
+    "total": "456",
+    "count": 12,
+    "aligned": false,
+    "blocks": [
+     "192.168.0.1/32",
+     "192.168.0.2/31",
+     "192.168.0.4/30",
+     "192.168.0.8/29",
+     "192.168.0.16/28",
+     "192.168.0.32/27",
+     "192.168.0.64/26",
+     "192.168.0.128/25",
+     "192.168.1.0/25",
+     "192.168.1.128/26",
+     "192.168.1.192/29",
+     "192.168.1.200/32"
+    ],
+    "first": "192.168.0.1/32",
+    "last": "192.168.1.200/32"
+   }
+  },
+  {
+   "input": "1.2.3.4 - 1.2.3.4",
+   "expect": {
+    "version": 4,
+    "total": "1",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "1.2.3.4/32"
+    ],
+    "first": "1.2.3.4/32",
+    "last": "1.2.3.4/32"
+   }
+  },
+  {
+   "input": "0.0.0.0 - 255.255.255.255",
+   "expect": {
+    "version": 4,
+    "total": "4294967296",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "0.0.0.0/0"
+    ],
+    "first": "0.0.0.0/0",
+    "last": "0.0.0.0/0"
+   }
+  },
+  {
+   "input": "10.0.0.0 - 10.0.1.255",
+   "expect": {
+    "version": 4,
+    "total": "512",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "10.0.0.0/23"
+    ],
+    "first": "10.0.0.0/23",
+    "last": "10.0.0.0/23"
+   }
+  },
+  {
+   "input": "10.0.0.0 - 10.0.1.254",
+   "expect": {
+    "version": 4,
+    "total": "511",
+    "count": 9,
+    "aligned": false,
+    "blocks": [
+     "10.0.0.0/24",
+     "10.0.1.0/25",
+     "10.0.1.128/26",
+     "10.0.1.192/27",
+     "10.0.1.224/28",
+     "10.0.1.240/29",
+     "10.0.1.248/30",
+     "10.0.1.252/31",
+     "10.0.1.254/32"
+    ],
+    "first": "10.0.0.0/24",
+    "last": "10.0.1.254/32"
+   }
+  },
+  {
+   "input": "172.16.0.0 - 172.31.255.255",
+   "expect": {
+    "version": 4,
+    "total": "1048576",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "172.16.0.0/12"
+    ],
+    "first": "172.16.0.0/12",
+    "last": "172.16.0.0/12"
+   }
+  },
+  {
+   "input": "100.64.0.1 - 100.64.0.10",
+   "expect": {
+    "version": 4,
+    "total": "10",
+    "count": 5,
+    "aligned": false,
+    "blocks": [
+     "100.64.0.1/32",
+     "100.64.0.2/31",
+     "100.64.0.4/30",
+     "100.64.0.8/31",
+     "100.64.0.10/32"
+    ],
+    "first": "100.64.0.1/32",
+    "last": "100.64.0.10/32"
+   }
+  },
+  {
+   "input": "8.8.8.8 - 8.8.9.7",
+   "expect": {
+    "version": 4,
+    "total": "256",
+    "count": 6,
+    "aligned": false,
+    "blocks": [
+     "8.8.8.8/29",
+     "8.8.8.16/28",
+     "8.8.8.32/27",
+     "8.8.8.64/26",
+     "8.8.8.128/25",
+     "8.8.9.0/29"
+    ],
+    "first": "8.8.8.8/29",
+    "last": "8.8.9.0/29"
+   }
+  },
+  {
+   "input": "255.255.255.255 - 255.255.255.255",
+   "expect": {
+    "version": 4,
+    "total": "1",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "255.255.255.255/32"
+    ],
+    "first": "255.255.255.255/32",
+    "last": "255.255.255.255/32"
+   }
+  },
+  {
+   "input": "10.0.0.5-10.0.0.9",
+   "expect": {
+    "version": 4,
+    "total": "5",
+    "count": 3,
+    "aligned": false,
+    "blocks": [
+     "10.0.0.5/32",
+     "10.0.0.6/31",
+     "10.0.0.8/31"
+    ],
+    "first": "10.0.0.5/32",
+    "last": "10.0.0.8/31"
+   }
+  },
+  {
+   "input": "10.0.0.5 – 10.0.0.9",
+   "expect": {
+    "version": 4,
+    "total": "5",
+    "count": 3,
+    "aligned": false,
+    "blocks": [
+     "10.0.0.5/32",
+     "10.0.0.6/31",
+     "10.0.0.8/31"
+    ],
+    "first": "10.0.0.5/32",
+    "last": "10.0.0.8/31"
+   }
+  },
+  {
+   "input": "10.0.0.5 to 10.0.0.9",
+   "expect": {
+    "version": 4,
+    "total": "5",
+    "count": 3,
+    "aligned": false,
+    "blocks": [
+     "10.0.0.5/32",
+     "10.0.0.6/31",
+     "10.0.0.8/31"
+    ],
+    "first": "10.0.0.5/32",
+    "last": "10.0.0.8/31"
+   }
+  },
+  {
+   "input": "203.0.113.7 - 203.0.113.7",
+   "expect": {
+    "version": 4,
+    "total": "1",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "203.0.113.7/32"
+    ],
+    "first": "203.0.113.7/32",
+    "last": "203.0.113.7/32"
+   }
+  },
+  {
+   "input": "2001:db8:: - 2001:db8::ff",
+   "expect": {
+    "version": 6,
+    "total": "256",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "2001:db8::/120"
+    ],
+    "first": "2001:db8::/120",
+    "last": "2001:db8::/120"
+   }
+  },
+  {
+   "input": "2001:db8::1 - 2001:db8::1",
+   "expect": {
+    "version": 6,
+    "total": "1",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "2001:db8::1/128"
+    ],
+    "first": "2001:db8::1/128",
+    "last": "2001:db8::1/128"
+   }
+  },
+  {
+   "input": ":: - ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+   "expect": {
+    "version": 6,
+    "total": "340282366920938463463374607431768211456",
+    "count": 1,
+    "aligned": true,
+    "blocks": [
+     "::/0"
+    ],
+    "first": "::/0",
+    "last": "::/0"
+   }
+  },
+  {
+   "input": "fe80::1 - fe80::ffff",
+   "expect": {
+    "version": 6,
+    "total": "65535",
+    "count": 16,
+    "aligned": false,
+    "blocks": [
+     "fe80::1/128",
+     "fe80::2/127",
+     "fe80::4/126",
+     "fe80::8/125",
+     "fe80::10/124",
+     "fe80::20/123",
+     "fe80::40/122",
+     "fe80::80/121",
+     "fe80::100/120",
+     "fe80::200/119",
+     "fe80::400/118",
+     "fe80::800/117",
+     "fe80::1000/116",
+     "fe80::2000/115",
+     "fe80::4000/114",
+     "fe80::8000/113"
+    ],
+    "first": "fe80::1/128",
+    "last": "fe80::8000/113"
+   }
+  },
+  {
+   "input": "2001:db8:0:1:: - 2001:db8:0:2:ffff:ffff:ffff:ffff",
+   "expect": {
+    "version": 6,
+    "total": "36893488147419103232",
+    "count": 2,
+    "aligned": false,
+    "blocks": [
+     "2001:db8:0:1::/64",
+     "2001:db8:0:2::/64"
+    ],
+    "first": "2001:db8:0:1::/64",
+    "last": "2001:db8:0:2::/64"
+   }
+  },
+  {
+   "input": "10.0.0.200 - 10.0.0.5",
+   "expect": null,
+   "oracle_error": "end address is smaller than start address"
+  },
+  {
+   "input": "10.0.0.5 - not-an-ip",
+   "expect": null,
+   "oracle_error": "'not-an-ip' does not appear to be an IPv4 or IPv6 address"
+  },
+  {
+   "input": "10.0.0.5 - 10.0.0.999",
+   "expect": null,
+   "oracle_error": "'10.0.0.999' does not appear to be an IPv4 or IPv6 address"
+  },
+  {
+   "input": "2001:db8:: - 10.0.0.5",
+   "expect": null,
+   "oracle_error": "end address is smaller than start address"
+  }
+ ],
  "meta": {
   "host_rule_checked_against_cpython": 20,
   "host_rule_note": "Small prefixes use list(hosts()) directly; large ones use the same rule, which was checked one by one against CPython on 20 materialisable prefixes"

@@ -180,6 +180,52 @@
         r.ok ? "computed when it should have failed: " + r.cidr : (r.error && r.error.message));
     });
 
+    g("Range \u2192 CIDR set (against the Python oracle)");
+    (data.ranges || []).forEach(function (c) {
+      var r = E.rangeToCidr(c.input);
+      if (!c.expect) {
+        t("rejected: " + c.input, !r.ok, r.ok ? "decomposed a range that must not work" : null);
+        return;
+      }
+      if (!r.ok) { t(c.input + " should decompose", false, r.error && r.error.message); return; }
+      var want = c.expect;
+      t(c.input + " \u2192 " + want.count + " blocks, exact set",
+        r.blocks.join(" ") === want.blocks.join(" "),
+        "expected " + want.blocks.join(" ") + " got " + r.blocks.join(" "));
+      if (r.blocks.join(" ") !== want.blocks.join(" ")) return;
+      t(c.input + " \u2192 total and family",
+        String(r.total) === String(want.total) && r.version === want.version &&
+        r.aligned === want.aligned, [r.total, want.total, r.version, r.aligned]);
+      // invariant 1: at most two blocks per bit (64 for v4, 256 for v6)
+      var cap = (r.version === 6? 256: 64);
+      if (r.count > cap) t(c.input + " \u2192 block count over the structural bound", false, r.count);
+      // invariant 2: contiguous, summing to hi-lo+1, each block valid (re-parsed by the engine)
+      var prev = null, chain = true, sum = 0n;
+      r.blocks.forEach(function (b) {
+        var a;
+        // parse() reports failure by throwing, not by returning {ok:false}:
+        // an `if (!a.ok)` here marks every block invalid and blames the engine.
+        try { a = E.parse(b); } catch (e) { chain = false; return; }
+        if (!a || a.network === undefined) { chain = false; return; }
+        var size = 1n << (BigInt(r.version === 6? 128: 32) - BigInt(a.prefixlen));
+        if (prev !== null && a.network !== prev) chain = false;
+        prev = a.network + size;
+        sum += size;
+      });
+      t(c.input + " \u2192 blocks are valid, aligned, contiguous and sum right",
+        chain && String(sum) === String(r.total), { sum: String(sum), want: String(r.total), contiguous: chain });
+    });
+    t("range cases exist at all", (data.ranges || []).length >= 20, (data.ranges || []).length);
+    t("backwards and mixed-family ranges are refused",
+      !E.rangeToCidr("10.0.0.9 - 10.0.0.1").ok && !E.rangeToCidr("2001:db8:: - 10.0.0.5").ok);
+    t("whole IPv4 space is one /0", (function () {
+      var r = E.rangeToCidr("0.0.0.0 - 255.255.255.255");
+      return r.ok && r.count === 1 && r.blocks[0] === "0.0.0.0/0" && r.total === "4294967296";
+    })());
+    t("an unaligned single address still answers /32",
+      (function () { var r = E.rangeToCidr("1.2.3.4 - 1.2.3.4");
+        return r.ok && r.blocks.join() === "1.2.3.4/32"; })());
+
     g("Error text says what to do, not just invalid");
     [
       ["192.168.1.256/24", "255"],

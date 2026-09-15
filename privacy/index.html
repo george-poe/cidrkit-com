@@ -9,16 +9,16 @@
 <meta property="og:site_name" content="CIDRKit">
 <meta property="og:title" content="Privacy — CIDRKit">
 <meta property="og:description" content="What happens to your data on this site, stated precisely.">
-<meta property="og:url" content="https://cidrkit.com/privacy/">
+<meta property="og:url" content="http://cidrkit.com/privacy/">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f7a5a'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='2.4'%3E%3Cpath d='M16 7v18M8 12h16M8 20h16'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="/logo-192.png">
-<meta property="og:image" content="https://cidrkit.com/logo.png">
-<meta name="twitter:image" content="https://cidrkit.com/logo.png">
+<meta property="og:image" content="http://cidrkit.com/logo.png">
+<meta name="twitter:image" content="http://cidrkit.com/logo.png">
   <meta name="robots" content="noindex,follow">
-<link rel="canonical" href="https://cidrkit.com/privacy/">
+<link rel="canonical" href="http://cidrkit.com/privacy/">
 <link rel="stylesheet" href="/assets/style.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"PrivacyPolicy","name":"Privacy","url":"https://cidrkit.com/privacy/","dateModified":"2026-09-14"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"PrivacyPolicy","name":"Privacy","url":"http://cidrkit.com/privacy/","dateModified":"2026-09-14"}</script>
 </head>
 <body>
 <header class="site">
@@ -39,26 +39,26 @@
   <div class="prose">
   <h2 id="nothing-you-type-is-transmitted">Nothing you type is transmitted</h2>
       <p>The calculator, the collapse list, the split planner and the containment check are arithmetic on integers. They run in the page you already downloaded: there is no upload endpoint, no backend, no account system and no database behind this site.</p>
-      <p>The engine ships with the page. Open `<code>view-source:https://cidrkit.com/assets/cidr.js</code>` and search for `fetch`, `XMLHttpRequest` or `sendBeacon` — none of those identifiers appear anywhere in it. That is a check you can actually run, not a promise.</p>
+      <p>The engine ships with the page. Open <code>assets/cidr.js</code> — a plain file at the same origin as this page, no build step and no login — and search for <code>fetch</code>, <code>XMLHttpRequest</code> or <code>sendBeacon</code>; none of those identifiers appear anywhere in it. That is a check you can actually run, not a promise.</p>
   <h2 id="the-share-link-and-why-it-is-not-an-upload">The share link, and why it is not an upload</h2>
-      <p>Copy link writes the current tab and what you typed into the fragment of the address — the part after the `#`. Browsers do not transmit a fragment: it is not in the HTTP request, it is not in any `Referer` header, and this site has no server that could record it. There is no account, no saved link and no recent list, so nothing is kept on our side either.</p>
+      <p>Copy link writes the current tab and what you typed into the fragment of the address — the part after the <code>#</code>. Browsers do not transmit a fragment: it is not in the HTTP request, it is not in any <code>Referer</code> header, and this site has no server that could record it. There is no account, no saved link and no recent list, so nothing is kept on our side either.</p>
       <p>What does leave is whatever you do with the address afterwards. Paste that link into a chat, a ticket or an email and its contents travel with it — the fragment is readable by anyone who can read the message. If that matters, share the CIDR notation instead: it says the same thing and is safe to repeat.</p>
   <h2 id="no-registry-lookups-on-purpose">No registry lookups, on purpose</h2>
       <p>A subnet calculator can be made to look clever by asking IANA who owns a block. This one does not: it reports the categories from RFC 6890 as compiled into the code, and it will tell you when a range is unallocated-looking rather than pretend to know. Asking a registry would mean your network plan left your browser, and a network plan is exactly the sort of thing worth keeping local.</p>
-      <p>The same reasoning is why there is no `whois` button here.</p>
+      <p>The same reasoning is why there is no <code>whois</code> button here.</p>
   <h2 id="who-does-see-something">Who does see something</h2>
-      <p>These files are delivered by GitHub Pages from an IP in `185.199.108.0/22`. Like every web server, GitHub's edge records the standard request line: your IP address, user agent string, the path requested, a timestamp and the `Referer` header if your browser sent one. That log exists whether or not you type anything, because requesting the page is what makes the page appear.</p>
+      <p>These files are delivered by GitHub Pages from an IP in <code>185.199.108.0/22</code>. Like every web server, GitHub's edge records the standard request line: your IP address, user agent string, the path requested, a timestamp and the <code>Referer</code> header if your browser sent one. That log exists whether or not you type anything, because requesting the page is what makes the page appear.</p>
       <p>If you reached this page from a search engine, the search engine also knows you asked. That is on their side, not ours.</p>
   <h2 id="ads-and-consent">Ads and consent</h2>
-      <p>This site is served with Google AdSense enabled. Adverts come from `pagead2.googlesyndication.com` and `googleadservices.com`, so your browser talks to Google when you load a page here — that is a third-party request, and it is visible in a network panel. We reworded every sentence that would stop being true, rather than keep it.</p>
+      <p>This site is served with Google AdSense enabled. Adverts come from <code>pagead2.googlesyndication.com</code> and <code>googleadservices.com</code>, so your browser talks to Google when you load a page here — that is a third-party request, and it is visible in a network panel. We reworded every sentence that would stop being true, rather than keep it.</p>
       <p>Google uses cookies to serve ads based on your prior visits to this or other sites. You can opt out at <a href="https://www.google.com/settings/ads">https://www.google.com/settings/ads</a> or at <a href="https://www.aboutads.info/choices">https://www.aboutads.info/choices</a>; how Google uses data it collects through its ad platform is described at <a href="https://policies.google.com/technologies/partner-sites">https://policies.google.com/technologies/partner-sites</a>.</p>
       <p>In the EEA, the UK and Switzerland you should see a consent message before any personalised advertising. The amount of data shared with Google follows that consent choice, not anything on this site.</p>
       <p>Advertising revenue does not change what the calculator does: the arithmetic path is identical with an advert on the page or without one.</p>
   <h2 id="analytics-cookies-and-storage">Analytics, cookies and storage</h2>
       <p>This build ships no analytics of any kind; if one is ever added, the request shows up in your own network panel and this paragraph gets rewritten. Nothing measures which prefixes you typed or how long you stayed — a counter would need a request to whoever serves it, and this site makes none for that purpose.</p>
-      <p>The site sets no cookies of its own and keeps nothing in `localStorage` or `IndexedDB`. Reload the page and your input is gone. With advertising enabled Google may set cookies on its own domains; those are theirs to read, not ours.</p>
+      <p>The site sets no cookies of its own and keeps nothing in <code>localStorage</code> or <code>IndexedDB</code>. Reload the page and your input is gone. With advertising enabled Google may set cookies on its own domains; those are theirs to read, not ours.</p>
   <h2 id="how-the-numbers-are-checked">How the numbers are checked</h2>
-      <p>Every field the calculator reports is compared against Python's standard-library `ipaddress` module, on 356 generated prefixes covering both address families and the boundary cases, and on 15 malformed inputs that both implementations must reject. The vectors and the comparison run in the browser, on this origin: <a href="/test/">/test/</a> shows the result of each assertion. That page is not indexed and is not a promise — it is the test, executing.</p>
+      <p>Every field the calculator reports is compared against Python's standard-library <code>ipaddress</code> module, on 356 generated prefixes covering both address families and the boundary cases, and on 15 malformed inputs that both implementations must reject. The vectors and the comparison run in the browser, on this origin: <a href="/test/">/test/</a> shows the result of each assertion. That page is not indexed and is not a promise — it is the test, executing.</p>
       <p>Where the two disagree, the bug is in this site and gets fixed here rather than explained away.</p>
   <h2 id="feedback">Feedback</h2>
       <p>A wrong number, or a sentence on this page that no longer matches reality: the quiet link that appears next to a failure message, and the Feedback link in the footer, open a new issue on <a href="https://github.com/george-poe/cidrkit-com">https://github.com/george-poe/cidrkit-com</a> with a short note already typed in it: the page path, which tab the failure happened on, the date of the build you were looking at, and then whatever that failure had to give — the length in bytes of what you typed together with the error message exactly as this page printed it, or a one-line note naming the limit you hit. It is an ordinary link, so there is no separate submission channel for feedback: what appears in the form is what the link put there, on screen before anything is sent, and you can read it, change it, or delete it. The 404 page prefills a title and nothing else, because there is no run to report there.</p>

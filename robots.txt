@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: http://cidrkit.com/sitemap.xml
+Sitemap: https://cidrkit.com/sitemap.xml

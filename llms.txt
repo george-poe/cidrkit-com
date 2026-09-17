@@ -6,7 +6,7 @@ All calculations run in the browser. Nothing is uploaded.
 
 ## Tools
 
-- [Subnet Calculator](http://cidrkit.com/subnet-calculator/): Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing you paste is uploaded.
+- [Subnet Calculator](https://cidrkit.com/subnet-calculator/): Enter a CIDR block, a dotted mask, a wildcard mask or an address range and get every derived value. Collapses 50,000 CIDRs in 188 ms. Nothing you paste is uploaded.
 
 ## Key facts
 
